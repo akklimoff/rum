@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import TheoryTabs from '../../components/TheoryTabs.astro';
+import { IntervalsExplorer } from '../../components/IntervalsExplorer';
+---
+
+<Base title="Интервалы — Rum" current="tools">
+  <TheoryTabs current="intervals" />
+  <IntervalsExplorer client:load />
+</Base>

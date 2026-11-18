@@ -1,0 +1,87 @@
+:root {
+  --bg: #f6f3ee;
+  --panel: #ffffff;
+  --raise: #ebe5dc;
+  --line: #e0d8cd;
+  --fg: #1d1815;
+  --muted: #74695f;
+  --accent: #eda52f;
+  --accent-ink: #a35f00;
+  --on-accent: #1a1206;
+  --glow: #fbe6bd;
+  --string: #a3978b;
+  --fret: #e0d8cd;
+  --dot-ink: #ffffff;
+  --d1: #ac6300;
+  --d2: #7d7713;
+  --d3: #34843d;
+  --d4: #7a50c2;
+  --d5: #c94b26;
+  --d6: #c2438a;
+  --d7: #776e66;
+  --tonic-glow: none;
+  --shadow-lift: 0 10px 24px -14px rgba(74, 48, 12, 0.45);
+
+  --font-ui: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --ease-spring: linear(0, 0.044, 0.154, 0.301, 0.464, 0.623, 0.767, 0.888, 0.983, 1.052, 1.096, 1.12, 1.126, 1.121, 1.107, 1.088, 1.068, 1.047, 1.029, 1.014, 1.002, 0.993, 0.988, 0.985, 0.984, 0.985, 0.987, 0.989, 0.991, 0.994, 0.996, 0.998, 1);
+  --ease-soft: linear(0, 0.04, 0.138, 0.264, 0.399, 0.529, 0.646, 0.747, 0.829, 0.894, 0.943, 0.978, 1.002, 1.017, 1.025, 1.028, 1.028, 1.026, 1.023, 1.019, 1.015, 1.012, 1.008, 1.006, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-card: 14px;
+  --radius-panel: 18px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #110f0e;
+    --panel: #1b1816;
+    --raise: #27221f;
+    --line: #2e2824;
+    --fg: #f6f0e9;
+    --muted: #9a8f86;
+    --accent: #f4b24c;
+    --accent-ink: #f4b24c;
+    --on-accent: #1a1206;
+    --glow: #2a1d0c;
+    --string: #6a5f56;
+    --fret: #2f2925;
+    --dot-ink: #14100c;
+    --d1: #f4b24c;
+    --d2: #cfc75c;
+    --d3: #88d27c;
+    --d4: #c6a0f4;
+    --d5: #f78763;
+    --d6: #f292c0;
+    --d7: #cbc2ba;
+    --tonic-glow: drop-shadow(0 0 7px var(--d1));
+  --shadow-lift: 0 12px 26px -14px rgba(0, 0, 0, 0.9);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #110f0e;
+  --panel: #1b1816;
+  --raise: #27221f;
+  --line: #2e2824;
+  --fg: #f6f0e9;
+  --muted: #9a8f86;
+  --accent: #f4b24c;
+  --accent-ink: #f4b24c;
+  --on-accent: #1a1206;
+  --glow: #2a1d0c;
+  --string: #6a5f56;
+  --fret: #2f2925;
+  --dot-ink: #14100c;
+  --d1: #f4b24c;
+  --d2: #cfc75c;
+  --d3: #88d27c;
+  --d4: #c6a0f4;
+  --d5: #f78763;
+  --d6: #f292c0;
+  --d7: #cbc2ba;
+  --tonic-glow: drop-shadow(0 0 7px var(--d1));
+  --shadow-lift: 0 12px 26px -14px rgba(0, 0, 0, 0.9);
+  color-scheme: dark;
+}

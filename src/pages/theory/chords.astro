@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import TheoryTabs from '../../components/TheoryTabs.astro';
+import { ChordExplorer } from '../../components/ChordExplorer';
+---
+
+<Base title="Аккорд — Rum" current="tools">
+  <TheoryTabs current="chords" />
+  <ChordExplorer client:load />
+</Base>

@@ -1,0 +1,34 @@
+---
+import Base from './Base.astro';
+import { Quiz } from '../components/Quiz';
+import { LESSONS, LEVELS } from '../data/lessons';
+import type { QuizId } from '../lib/quiz/questions';
+import '../styles/lesson.css';
+
+interface Props {
+  frontmatter: { slug: string };
+}
+
+const index = LESSONS.findIndex((lesson) => lesson.slug === Astro.props.frontmatter.slug);
+const lesson = LESSONS[index]!;
+const level = LEVELS.find((item) => item.level === lesson.level)!;
+const previous = LESSONS[index - 1];
+const next = LESSONS[index + 1];
+---
+
+<Base title={`${lesson.title} — Rum`} current="lessons">
+  <article class="lesson">
+    <header class="lesson-head">
+      <p class="lesson-crumb">Уровень {level.level}. {level.title} · урок {lesson.number} из {LESSONS.length}</p>
+      <h1>{lesson.title}</h1>
+    </header>
+    <div class="lesson-body">
+      <slot />
+    </div>
+    <Quiz client:only="react" lesson={lesson.slug as QuizId} />
+    <nav class="lesson-nav" aria-label="Соседние уроки">
+      {previous ? <a href={`/lessons/${previous.slug}`}><span>← урок {previous.number}</span><b>{previous.title}</b></a> : <span></span>}
+      {next ? <a class="lesson-next" href={`/lessons/${next.slug}`}><span>урок {next.number} →</span><b>{next.title}</b></a> : <a class="lesson-next" href="/"><span>конец уровня 2 →</span><b>Все уроки</b></a>}
+    </nav>
+  </article>
+</Base>

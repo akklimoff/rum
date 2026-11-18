@@ -1,0 +1,99 @@
+.fretboard {
+  display: block;
+  width: 100%;
+  min-width: 820px;
+  height: auto;
+}
+
+.fretboard-inlay {
+  fill: var(--fret);
+}
+
+.fretboard-fret {
+  stroke: var(--fret);
+  stroke-width: 1.5;
+}
+
+.fretboard-nut {
+  stroke: var(--string);
+  stroke-width: 4;
+}
+
+.fretboard-string {
+  stroke: var(--string);
+}
+
+.fretboard-number {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.fretboard-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dot-in 0.5s var(--ease-spring) backwards;
+  animation-delay: calc(var(--fret, 0) * 16ms);
+  transition: opacity 0.25s var(--ease-out), transform 0.4s var(--ease-spring);
+}
+
+.fretboard-dot:hover {
+  transform: scale(1.18);
+}
+
+.fretboard-dot[data-dimmed] {
+  opacity: 0.16;
+  transform: scale(0.82);
+}
+
+@keyframes dot-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+.fretboard-dot[data-tonic] circle {
+  filter: var(--tonic-glow);
+}
+
+.fretboard-dot text {
+  fill: var(--dot-ink);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.fretboard-dot[data-neutral] circle {
+  fill: var(--raise);
+  stroke: var(--line);
+}
+
+.fretboard-dot[data-neutral] text {
+  fill: var(--fg);
+}
+
+.fretboard-link {
+  stroke: var(--accent-ink);
+  stroke-width: 2;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  opacity: 0.7;
+  animation: link-in 0.5s var(--ease-out) backwards;
+}
+
+@keyframes link-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.fretboard-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.fretboard-hit:hover {
+  fill: var(--accent);
+  fill-opacity: 0.12;
+}

@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import TheoryTabs from '../../components/TheoryTabs.astro';
+import { ProgressionExplorer } from '../../components/ProgressionExplorer';
+---
+
+<Base title="Прогрессии — Rum" current="tools">
+  <TheoryTabs current="progressions" />
+  <ProgressionExplorer client:load />
+</Base>

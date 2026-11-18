@@ -1,0 +1,78 @@
+---
+import Base from '../layouts/Base.astro';
+import { LESSONS, LEVELS } from '../data/lessons';
+import { SONGS } from '../data/songs';
+import '../styles/home.css';
+
+const tools = [
+  { href: '/theory/fretboard', label: 'Лады и аккорды' },
+  { href: '/theory/notes', label: 'Ноты' },
+  { href: '/theory/intervals', label: 'Интервалы' },
+  { href: '/theory/chords', label: 'Аккорд' },
+  { href: '/theory/progressions', label: 'Прогрессии' },
+];
+---
+
+<Base title="Rum" current="lessons">
+  <div class="home">
+    <section class="home-intro">
+      <h1>Rum</h1>
+      <p>Теория музыки для гитариста: уроки, наглядные на грифе, и разборы песен.</p>
+    </section>
+
+    {LEVELS.map((level) => (
+      <section class="home-section" aria-labelledby={`level-${level.level}`}>
+        <h2 id={`level-${level.level}`}>
+          <span class="home-level">Уровень {level.level}</span>
+          {level.title}
+        </h2>
+        <p>{level.summary}</p>
+        <ol class="home-cards">
+          {LESSONS.filter((lesson) => lesson.level === level.level).map((lesson) => (
+            <li>
+              <a class="home-card" href={`/lessons/${lesson.slug}`} data-quiz={lesson.slug}>
+                <i>{lesson.number}</i>
+                <b>{lesson.title}</b>
+                <span>{lesson.summary}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+
+    <section class="home-section" aria-labelledby="tools">
+      <h2 id="tools">Гриф без уроков</h2>
+      <p>Те же инструменты отдельно, когда нужно быстро что-то проверить.</p>
+      <ul class="home-tools">
+        {tools.map((tool) => (
+          <li><a href={tool.href}>{tool.label}</a></li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="home-section" aria-labelledby="songs">
+      <h2 id="songs">Песни</h2>
+      <p>Табулатуры с проигрыванием: курсор, скорость, петля.</p>
+      <ul class="home-tools">
+        {SONGS.map((song) => (
+          <li><a href={`/songs/${song.slug}`}>{[song.artist, song.title].filter(Boolean).join(' — ')}</a></li>
+        ))}
+      </ul>
+    </section>
+  </div>
+  <script is:inline>
+    for (const card of document.querySelectorAll('[data-quiz]')) {
+      try {
+        const best = Number.parseInt(localStorage.getItem(`rum-quiz-${card.dataset.quiz}`) ?? '', 10);
+        if (Number.isNaN(best)) continue;
+        const badge = document.createElement('em');
+        badge.textContent = `квиз: ${best} из 8`;
+        if (best === 8) badge.dataset.perfect = '';
+        card.append(badge);
+      } catch {
+        break;
+      }
+    }
+  </script>
+</Base>

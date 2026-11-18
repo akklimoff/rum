@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import TheoryTabs from '../../components/TheoryTabs.astro';
+import { NotesExplorer } from '../../components/NotesExplorer';
+---
+
+<Base title="Ноты на грифе — Rum" current="tools">
+  <TheoryTabs current="notes" />
+  <NotesExplorer client:load />
+</Base>

@@ -1,0 +1,27 @@
+---
+import Base from '../../layouts/Base.astro';
+import { barsLabel } from '../../lib/plural';
+import { SONGS } from '../../data/songs';
+import '../../styles/home.css';
+---
+
+<Base title="Песни — Rum" current="songs">
+  <div class="home">
+    <section class="home-section" aria-labelledby="songs">
+      <h1 id="songs" class="home-title">Песни</h1>
+      <p>Табулатуры с проигрыванием. Разборы с точки зрения теории появятся следом.</p>
+      {SONGS.length === 0 && <p>Пока пусто: положи файл Guitar Pro в <code>public/tabs</code>.</p>}
+      <ul class="home-cards">
+        {SONGS.map((song) => (
+          <li>
+            <a class="home-card" href={`/songs/${song.slug}`}>
+              <i>{song.artist}</i>
+              <b>{song.title}</b>
+              <span>{barsLabel(song.bars)} · ♩ = {song.tempo}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+</Base>

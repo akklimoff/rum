@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/Base.astro';
+import { TabPlayer } from '../../components/TabPlayer';
+import { barsLabel } from '../../lib/plural';
+import { SONGS } from '../../data/songs';
+import '../../styles/lesson.css';
+
+export function getStaticPaths() {
+  return SONGS.map((song) => ({ params: { slug: song.slug }, props: { song } }));
+}
+
+const { song } = Astro.props;
+---
+
+<Base title={`${song.title} — Rum`} current="songs" wide>
+  <article class="lesson">
+    <header class="lesson-head">
+      <p class="lesson-crumb">{[song.artist, barsLabel(song.bars), `♩ = ${song.tempo}`].filter(Boolean).join(' · ')}</p>
+      <h1>{song.title}</h1>
+    </header>
+    <TabPlayer client:only="react" file={song.file} />
+  </article>
+</Base>

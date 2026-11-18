@@ -1,0 +1,76 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/600.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+
+interface Props {
+  title: string;
+  current?: 'lessons' | 'tools' | 'songs';
+  wide?: boolean;
+}
+
+const { title, current, wide = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <script is:inline>
+      try {
+        const saved = localStorage.getItem('rum-theme');
+        if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div class:list={['shell', { 'shell-wide': wide }]}>
+      <header class="topbar">
+        <a class="brand" href="/">rum<span>.</span></a>
+        <nav class="topnav" aria-label="Разделы">
+          <a href="/" aria-current={current === 'lessons' ? 'page' : undefined}>Уроки</a>
+          <a href="/theory/fretboard" aria-current={current === 'tools' ? 'page' : undefined}>Гриф</a>
+          <a href="/songs" aria-current={current === 'songs' ? 'page' : undefined}>Песни</a>
+        </nav>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Сменить тему">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+            <path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"></path>
+          </svg>
+        </button>
+      </header>
+      <main>
+        <slot />
+      </main>
+    </div>
+    <script is:inline>
+      const themeToggle = document.getElementById('theme-toggle');
+      let halfTurns = 0;
+      themeToggle.addEventListener('click', () => {
+        const root = document.documentElement;
+        const isDark = root.dataset.theme
+          ? root.dataset.theme === 'dark'
+          : matchMedia('(prefers-color-scheme: dark)').matches;
+        const next = isDark ? 'light' : 'dark';
+        const apply = () => {
+          root.dataset.theme = next;
+        };
+        halfTurns += 1;
+        themeToggle.querySelector('svg').style.transform = `rotate(${halfTurns * 180}deg)`;
+        if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.startViewTransition(apply);
+        } else {
+          apply();
+        }
+        try {
+          localStorage.setItem('rum-theme', next);
+        } catch {}
+      });
+    </script>
+  </body>
+</html>

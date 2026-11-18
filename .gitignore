@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+.superpowers/
+public/alphatab/
+.omc/
+public/tabs/*
+!public/tabs/.gitkeep
+.DS_Store

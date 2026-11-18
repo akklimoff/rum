@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import TheoryTabs from '../../components/TheoryTabs.astro';
+import { FretboardExplorer } from '../../components/FretboardExplorer';
+---
+
+<Base title="Гриф — Rum" current="tools">
+  <TheoryTabs current="scales" />
+  <FretboardExplorer client:load />
+</Base>
