@@ -39,9 +39,11 @@ export function tabCursorHandler(): AlphaTab.ICursorHandler {
       frame.style.width = px(bar.w);
       frame.style.height = px(bar.h);
     },
-    placeBeatCursor(_beatCursor, beatBounds, startBeatX) {
-      placeMark(beatBounds, startBeatX);
+    placeBeatCursor(_beatCursor, beatBounds) {
+      placeMark(beatBounds, beatBounds.onNotesX);
     },
-    transitionBeatCursor() {},
+    transitionBeatCursor(_beatCursor, beatBounds) {
+      placeMark(beatBounds, beatBounds.onNotesX);
+    },
   };
 }

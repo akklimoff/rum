@@ -9,8 +9,8 @@ type BeatBounds = Parameters<Handler['placeBarCursor']>[1];
 type Cursors = Parameters<Handler['onAttach']>[0];
 type Mode = Parameters<Handler['transitionBeatCursor']>[5];
 
-const bounds = (x: number, y: number, w: number, h: number) =>
-  ({ barBounds: { masterBarBounds: { visualBounds: { x, y, w, h } } } }) as unknown as BeatBounds;
+const bounds = (x: number, y: number, w: number, h: number, onNotesX = 0) =>
+  ({ onNotesX, barBounds: { masterBarBounds: { visualBounds: { x, y, w, h } } } }) as unknown as BeatBounds;
 
 const container = () => ({ element: document.createElement('div') }) as unknown as Container;
 
@@ -45,16 +45,16 @@ describe('tabCursorHandler', () => {
     expect([frame.style.left, frame.style.top, frame.style.width, frame.style.height]).toEqual(['10px', '20px', '300px', '80px']);
   });
 
-  it('centres a 14px mark on the beat position', () => {
+  it('centres a 14px mark on the beat notes position', () => {
     const { handler, mark } = setup();
-    handler.placeBeatCursor(container(), bounds(10, 20, 300, 80), 100);
+    handler.placeBeatCursor(container(), bounds(10, 20, 300, 80, 100), 90);
     expect([mark.style.left, mark.style.width, mark.style.top, mark.style.height]).toEqual(['93px', '14px', '20px', '80px']);
   });
 
-  it('leaves the mark on the sounding beat during a transition', () => {
+  it('moves the mark to the played beat on transition and ignores the next beat', () => {
     const { handler, mark } = setup();
-    handler.placeBeatCursor(container(), bounds(10, 20, 300, 80), 100);
-    handler.transitionBeatCursor(container(), bounds(10, 20, 300, 80), 100, 160, 450, mode);
-    expect(mark.style.left).toBe('93px');
+    handler.placeBeatCursor(container(), bounds(10, 20, 300, 80, 100), 90);
+    handler.transitionBeatCursor(container(), bounds(10, 20, 300, 80, 160), 90, 400, 450, mode);
+    expect(mark.style.left).toBe('153px');
   });
 });
