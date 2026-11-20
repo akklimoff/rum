@@ -16,11 +16,23 @@
 }
 
 .tabplayer-surface .at-cursor-bar {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-sizing: border-box;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
+/* alphaTab draws the cursors as 100px boxes shrunk with transform: scale(w / 100, h / 100), so the beat width (inline 300px, shown as 3px) has no setting and 1400px shows as 14px; its translateX(-50%) keeps the pill centred. */
 .tabplayer-surface .at-cursor-beat {
-  background: var(--accent);
+  width: 1400px !important;
+  border-radius: 700px / 5px;
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabplayer-surface .at-cursor-beat {
+    transition: none !important;
+  }
 }
 
 .tabplayer-surface .at-selection div {
