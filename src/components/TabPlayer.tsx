@@ -5,6 +5,7 @@ import { sectionAt, songSections, type SongSection } from '../lib/sections';
 import { tabNeckDots, tabNeckFocusFret, tabNeckLinks, tabNeckMutedStrings, type NeckLabels, type TabNote } from '../lib/tabNeck';
 import { chordAt, type ChordChange } from '../lib/harmony';
 import { addHarmony, songHarmony } from '../lib/scoreChords';
+import { scoreTick, type PlayedBar } from '../lib/scoreTick';
 import { chordRoman, detectKey, keyShortName, keyTitle, scaleNotes, type DetectedKey } from '../lib/theory';
 import { formatTime } from '../lib/time';
 import { kindOfTrack } from '../lib/trackKind';
@@ -134,6 +135,8 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
   const trackList = useRef<HTMLUListElement>(null);
   const progressFill = useRef<HTMLDivElement>(null);
   const sectionList = useRef<SongSection[]>([]);
+  const scoreLength = useRef(0);
+  const playedBars = useRef<PlayedBar[]>([]);
   const harmony = useRef<ChordChange[]>([]);
   const api = useRef<AlphaTab.AlphaTabApi | null>(null);
   const shortcuts = useRef<Record<ShortcutAction, () => void> | null>(null);
@@ -209,14 +212,22 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
           addHarmony(alphaTab, score, harmony.current);
           setCurrentChord(chordAt(harmony.current, 0));
           const lastBar = score.masterBars.at(-1);
+          scoreLength.current = lastBar ? lastBar.start + lastBar.calculateDuration() : 0;
           sectionList.current = songSections(
             score.masterBars.map((bar) => ({ start: bar.start, section: bar.section?.text })),
-            lastBar ? lastBar.start + lastBar.calculateDuration() : 0,
+            scoreLength.current,
           );
           setSections(sectionList.current);
           setCurrentSection(sectionAt(sectionList.current, 0));
           const shown = score.tracks[firstTrack];
           setNeck(shown ? neckFor(shown) : null);
+        });
+        player.midiLoaded.on(() => {
+          playedBars.current = (player.tickCache?.masterBars ?? []).map((bar) => ({
+            start: bar.start,
+            end: bar.end,
+            scoreStart: bar.masterBar.start,
+          }));
         });
         player.soundFontLoad.on((progress) => setSoundProgress(progress.total ? progress.loaded / progress.total : 0));
         player.playerReady.on(() => {
@@ -228,8 +239,10 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
         player.playerPositionChanged.on((args) => {
           const played = args.endTick ? args.currentTick / args.endTick : 0;
           if (progressFill.current) progressFill.current.style.transform = `scaleX(${played})`;
-          setCurrentSection(sectionAt(sectionList.current, played));
-          const chord = chordAt(harmony.current, args.currentTick);
+          // The player counts ticks with repeats unrolled; sections and chords are placed in score ticks.
+          const tick = scoreTick(args.currentTick, playedBars.current);
+          setCurrentSection(sectionAt(sectionList.current, scoreLength.current ? tick / scoreLength.current : 0));
+          const chord = chordAt(harmony.current, tick);
           setCurrentChord((previous) => (previous?.tick === chord?.tick ? previous : chord));
           setTime((previous) => {
             const next = { current: Math.floor(args.currentTime / 1000) * 1000, end: args.endTime };
