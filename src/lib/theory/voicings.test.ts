@@ -9,19 +9,36 @@ const everyChord = () => ROOTS.flatMap((root) => CHORD_TYPES.map((type) => ({ ro
 const sounding = (frets: Voicing['frets']) =>
   frets.flatMap((fret, string) => (fret === null ? [] : [{ string, fret, midi: Note.midi(STANDARD_TUNING[string]!)! + fret }]));
 
-const fingers = (frets: Voicing['frets']) => {
-  const fretted = sounding(frets).filter((note) => note.fret > 0);
-  const lowest = Math.min(...fretted.map((note) => note.fret));
-  const barre = fretted.filter((note) => note.fret === lowest).map((note) => note.string);
-  const overOpen = frets.slice(Math.min(...barre), Math.max(...barre) + 1).includes(0);
-  return overOpen ? fretted.length : fretted.length - barre.length + 1;
-};
-
 test('the classic shapes are found', () => {
   expect(shapes(0, 'maj')).toContainEqual([0, 1, 0, 2, 3, null]);
   expect(shapes(9, 'min')).toContainEqual([0, 1, 2, 2, 0, null]);
   expect(shapes(5, 'maj')).toContainEqual([1, 1, 2, 3, 3, 1]);
   expect(shapes(7, '7')).toContainEqual([1, 0, 0, 0, 2, 3]);
+});
+
+test('a barre broken by an open string cannot hide a higher fret between its ends', () => {
+  const crossedFingers: [number, ChordTypeId, Voicing['frets']][] = [
+    [5, 'maj', [null, 1, 2, 3, 0, 1]],
+    [10, 'maj', [1, 3, 3, 0, 1, null]],
+    [11, 'min', [2, 0, 4, 0, 2, null]],
+    [6, 'min', [null, 2, 2, 4, 0, 2]],
+    [7, 'm7', [1, 3, 0, 0, 1, 3]],
+    [5, 'maj7', [0, 1, 2, 2, 0, 1]],
+    [5, '7', [null, 1, 2, 1, 0, 1]],
+    [10, 'maj7', [1, 3, 2, 0, 1, null]],
+    [10, '7', [1, 3, 1, 0, 1, null]],
+  ];
+  for (const [root, type, frets] of crossedFingers) expect(shapes(root, type), `${buildChord(root, type).symbol}`).not.toContainEqual(frets);
+  expect(shapes(9, '7')).toContainEqual([0, 2, 0, 2, 0, null]);
+});
+
+test('a shape needs at most four fingers, a barre on the lowest fret counting as one', () => {
+  expect(shapes(7, 'm7')).not.toContainEqual([3, 3, 0, 3, 1, 3]);
+  expect(shapes(5, 'maj')).toContainEqual([1, 1, 2, 3, 3, 1]);
+});
+
+test('pressed frets stay within three frets, the lowest and highest included', () => {
+  expect(shapes(0, 'maj')).not.toContainEqual([8, 5, 5, 5, 7, 8]);
 });
 
 test('each string-group shape is movable, so the open shape has no near-copies', () => {
@@ -57,8 +74,7 @@ test('every shape is playable and is the chord', () => {
       expect(strings, `${chord.symbol} ${frets}`).toEqual(Array.from({ length: strings.length }, (_, i) => strings[0]! + i));
       expect(notes.length).toBeGreaterThanOrEqual(4);
       const pressed = notes.filter((note) => note.fret > 0).map((note) => note.fret);
-      expect(Math.max(...pressed) - Math.min(...pressed), `${chord.symbol} ${frets}`).toBeLessThanOrEqual(3);
-      expect(fingers(frets), `${chord.symbol} ${frets}`).toBeLessThanOrEqual(4);
+      expect(Math.max(...pressed) - Math.min(...pressed), `${chord.symbol} ${frets}`).toBeLessThanOrEqual(2);
       const firstFret = Math.max(startFret, 1);
       expect(pressed.every((fret) => fret >= firstFret && fret < firstFret + 4), `${chord.symbol} ${frets} from ${startFret}`).toBe(true);
     }

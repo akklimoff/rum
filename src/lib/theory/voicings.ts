@@ -1,6 +1,6 @@
 import { Note } from 'tonal';
 import type { BuiltChord } from './chordTypes';
-import { STANDARD_TUNING } from './fretboard';
+import { FRET_COUNT, STANDARD_TUNING } from './fretboard';
 
 export interface Voicing {
   frets: (number | null)[];
@@ -18,12 +18,14 @@ interface SoundingNote {
 interface Candidate extends Voicing {
   sounding: number;
   fingers: number;
+  stretch: number;
   topFret: number;
   bassString: number;
 }
 
 const HAND_SPAN = 4;
-const LAST_WINDOW = 12;
+const LAST_WINDOW = FRET_COUNT - HAND_SPAN + 1;
+const MAX_STRETCH = 2;
 const MIN_STRINGS = 4;
 const MAX_FINGERS = 4;
 const PERFECT_FIFTH = 7;
@@ -58,18 +60,22 @@ function fingerCount(frets: Frets): number {
   if (fretted.length === 0) return 0;
   const lowest = Math.min(...fretted.map((note) => note.fret));
   const barre = fretted.filter((note) => note.fret === lowest).map((note) => note.string);
-  const overOpenString = frets.slice(Math.min(...barre), Math.max(...barre) + 1).includes(0);
-  return overOpenString ? fretted.length : fretted.length - barre.length + 1;
+  const underBarre = frets.slice(Math.min(...barre), Math.max(...barre) + 1);
+  if (!underBarre.includes(0)) return fretted.length - barre.length + 1;
+  // Without a barre, a higher fret between two lowest-fret fingers could only be reached with crossed fingers or the thumb.
+  return underBarre.some((fret) => fret !== null && fret > lowest) ? Infinity : fretted.length;
 }
 
 function measure(frets: Frets, notes: SoundingNote[], bass: SoundingNote): Candidate {
   const pressed = notes.map((note) => note.fret).filter((fret) => fret > 0);
   const topFret = Math.max(0, ...pressed);
+  const lowFret = pressed.length > 0 ? Math.min(...pressed) : 0;
   return {
     frets,
-    startFret: topFret <= HAND_SPAN ? 0 : Math.min(...pressed),
+    startFret: topFret <= HAND_SPAN ? 0 : lowFret,
     sounding: notes.length,
     fingers: fingerCount(frets),
+    stretch: topFret - lowFret,
     topFret,
     bassString: bass.string,
   };
@@ -95,14 +101,14 @@ export function chordVoicings(chord: BuiltChord, tuning: readonly string[] = STA
       const heard = new Set(notes.map((note) => pcOf(note.midi)));
       if (pcOf(bass.midi) !== root || !required.every((tone) => heard.has(tone.pc))) continue;
       const candidate = measure(frets, notes, bass);
-      if (candidate.fingers <= MAX_FINGERS) found.set(key, candidate);
+      if (candidate.fingers <= MAX_FINGERS && candidate.stretch <= MAX_STRETCH) found.set(key, candidate);
     }
   }
 
   const ranked = [...found.values()].sort(better);
   const picks: Candidate[] = [];
   const pick = (accept: (candidate: Candidate) => boolean) => {
-    const best = ranked.find((candidate) => accept(candidate) && !picks.includes(candidate));
+    const best = ranked.find(accept);
     if (best) picks.push(best);
   };
   const usesOpenString = (candidate: Candidate) => candidate.frets.includes(0);
