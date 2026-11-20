@@ -14,6 +14,7 @@ import { PlayerIcon } from './PlayerIcon';
 import { TrackIcon } from './TrackIcon';
 import { tabCursorHandler } from './tabCursor';
 import { LABEL_MODES, Segmented } from './controls';
+import { useMediaQuery } from './useMediaQuery';
 import './explorer.css';
 import './tabplayer.css';
 
@@ -41,6 +42,7 @@ const TAB_FONT = ['Inter Variable', 'system-ui', 'sans-serif'];
 const BACKING_VOLUME = 0.35;
 const SHORTEST_NECK = 12;
 const NECK_PIXELS_PER_FRET = 60;
+const SIDE_NECK_QUERY = '(min-width: 1300px)';
 const COLOR_ROLES = {
   staffLineColor: '--line',
   barSeparatorColor: '--muted',
@@ -154,6 +156,7 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
   const [currentSection, setCurrentSection] = useState<SongSection | null>(null);
   const [currentChord, setCurrentChord] = useState<ChordChange | null>(null);
   const [neckLabels, setNeckLabels] = useState<NeckLabels>('degrees');
+  const wide = useMediaQuery(SIDE_NECK_QUERY);
 
   const bringForward = (player: AlphaTab.AlphaTabApi, index: number) => {
     const all = player.score?.tracks ?? [];
@@ -401,6 +404,30 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
     ),
   ].filter(Boolean);
 
+  const neckView = neckShown && neck && (
+    <div
+      className="tabplayer-neck-window"
+      style={
+        {
+          '--neck-length': `${neck.fretCount * NECK_PIXELS_PER_FRET}px`,
+          '--focus': fretPositionRatio(neck.focusFret, neck.fretCount),
+        } as React.CSSProperties
+      }
+    >
+      <div className="tabplayer-neck-pan">
+        <Fretboard
+          orientation={wide ? 'vertical' : 'horizontal'}
+          dots={tabNeckDots(neck.notes, neck.tuning, scale, neckLabels)}
+          links={tabNeckLinks(neck.notes, neck.tuning)}
+          mutedStrings={tabNeckMutedStrings(neck.notes, neck.tuning)}
+          stringCount={neck.tuning.length}
+          fretCount={neck.fretCount}
+          ariaLabel="Гриф: ноты текущего такта"
+        />
+      </div>
+    </div>
+  );
+
   const trackOption = (entry: TrackEntry) => (
     <li key={entry.index} role="presentation">
       <button type="button" role="option" aria-selected={entry.index === track} title={trackTitle(entry)} onClick={() => chooseTrack(entry.index)}>
@@ -458,84 +485,66 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
         </div>
       )}
 
-      <div className="tabplayer-surface" ref={surface} />
-      {status === 'error' && <p className="tabplayer-note" role="alert">Не удалось загрузить табулатуру.</p>}
+      <div className="tabplayer-stage" data-side={wide && neckView ? '' : undefined}>
+        {wide && neckView && <aside className="tabplayer-side" aria-label="Гриф">{neckView}</aside>}
+        <div className="tabplayer-main">
+          <div className="tabplayer-surface" ref={surface} />
+          {status === 'error' && <p className="tabplayer-note" role="alert">Не удалось загрузить табулатуру.</p>}
 
-      <div className="tabplayer-dock">
-        {neckShown && neck && (
-          <div className="tabplayer-neck">
-            <div
-              className="tabplayer-neck-window"
-              style={
-                {
-                  '--neck-width': `${neck.fretCount * NECK_PIXELS_PER_FRET}px`,
-                  '--focus': fretPositionRatio(neck.focusFret, neck.fretCount),
-                } as React.CSSProperties
-              }
-            >
-              <div className="tabplayer-neck-pan">
-                <Fretboard
-                  dots={tabNeckDots(neck.notes, neck.tuning, scale, neckLabels)}
-                  links={tabNeckLinks(neck.notes, neck.tuning)}
-                  mutedStrings={tabNeckMutedStrings(neck.notes, neck.tuning)}
-                  stringCount={neck.tuning.length}
-                  fretCount={neck.fretCount}
-                  ariaLabel="Гриф: ноты текущего такта"
-                />
-              </div>
+          <div className="tabplayer-dock">
+            {!wide && neckView && <div className="tabplayer-neck">{neckView}</div>}
+
+            {infoParts.length > 0 && (
+              <p className="tabplayer-info">
+                {infoParts.map((part, index) => (
+                  <Fragment key={index}>
+                    {index > 0 && <span aria-hidden="true"> · </span>}
+                    {part}
+                  </Fragment>
+                ))}
+              </p>
+            )}
+
+            <div className="tabplayer-bar" role="toolbar" aria-label="Управление проигрыванием">
+              <button
+                type="button"
+                className="tabplayer-play"
+                disabled={!ready}
+                aria-label={playing ? 'Пауза' : 'Играть'}
+                title="Пробел"
+                onClick={() => withPlayer((player) => player.playPause())}
+              >
+                {playing ? '❚❚' : '▶'}
+              </button>
+              <button type="button" className="chip" disabled={!ready} aria-label="В начало" title="Home" onClick={() => withPlayer((player) => player.stop())}>
+                ◼
+              </button>
+              <span className="tabplayer-time" aria-live="off">
+                {ready ? `${formatTime(time.current)} / ${formatTime(time.end)}` : `звук ${Math.round(soundProgress * 100)}%`}
+              </span>
+
+              <span role="group" aria-label="Скорость">
+                <Segmented options={SPEEDS} value={String(speed) as (typeof SPEEDS)[number]['id']} onChange={(id) => chooseSpeed(Number(id))} />
+              </span>
+
+              <span className="tabplayer-group">
+                <button type="button" className="chip chip-icon" aria-pressed={looping} aria-label="Петля" title="Петля (L)" onClick={toggleLoop}><PlayerIcon kind="loop" /></button>
+                <button type="button" className="chip chip-icon" aria-pressed={metronome} aria-label="Метроном" title="Метроном (M)" onClick={toggleMetronome}><PlayerIcon kind="metronome" /></button>
+                <button type="button" className="chip chip-icon" aria-pressed={countIn} aria-label="Отсчёт" title="Отсчёт перед началом (C)" onClick={toggleCountIn}><PlayerIcon kind="countIn" /></button>
+              </span>
+
+              <span role="group" aria-label="Вид">
+                <Segmented options={VIEWS} value={view} onChange={chooseView} />
+              </span>
+
+              {neck && (
+                <span className="tabplayer-group" role="group" aria-label="Гриф">
+                  <button type="button" className="chip chip-icon" aria-pressed={neckShown} aria-label="Гриф" title="Гриф (G)" onClick={() => setNeckShown(!neckShown)}><PlayerIcon kind="neck" /></button>
+                  {neckShown && key && <Segmented options={LABEL_MODES} value={neckLabels} onChange={setNeckLabels} />}
+                </span>
+              )}
             </div>
           </div>
-        )}
-
-        {infoParts.length > 0 && (
-          <p className="tabplayer-info">
-            {infoParts.map((part, index) => (
-              <Fragment key={index}>
-                {index > 0 && <span aria-hidden="true"> · </span>}
-                {part}
-              </Fragment>
-            ))}
-          </p>
-        )}
-
-        <div className="tabplayer-bar" role="toolbar" aria-label="Управление проигрыванием">
-          <button
-            type="button"
-            className="tabplayer-play"
-            disabled={!ready}
-            aria-label={playing ? 'Пауза' : 'Играть'}
-            title="Пробел"
-            onClick={() => withPlayer((player) => player.playPause())}
-          >
-            {playing ? '❚❚' : '▶'}
-          </button>
-          <button type="button" className="chip" disabled={!ready} aria-label="В начало" title="Home" onClick={() => withPlayer((player) => player.stop())}>
-            ◼
-          </button>
-          <span className="tabplayer-time" aria-live="off">
-            {ready ? `${formatTime(time.current)} / ${formatTime(time.end)}` : `звук ${Math.round(soundProgress * 100)}%`}
-          </span>
-
-          <span role="group" aria-label="Скорость">
-            <Segmented options={SPEEDS} value={String(speed) as (typeof SPEEDS)[number]['id']} onChange={(id) => chooseSpeed(Number(id))} />
-          </span>
-
-          <span className="tabplayer-group">
-            <button type="button" className="chip chip-icon" aria-pressed={looping} aria-label="Петля" title="Петля (L)" onClick={toggleLoop}><PlayerIcon kind="loop" /></button>
-            <button type="button" className="chip chip-icon" aria-pressed={metronome} aria-label="Метроном" title="Метроном (M)" onClick={toggleMetronome}><PlayerIcon kind="metronome" /></button>
-            <button type="button" className="chip chip-icon" aria-pressed={countIn} aria-label="Отсчёт" title="Отсчёт перед началом (C)" onClick={toggleCountIn}><PlayerIcon kind="countIn" /></button>
-          </span>
-
-          <span role="group" aria-label="Вид">
-            <Segmented options={VIEWS} value={view} onChange={chooseView} />
-          </span>
-
-          {neck && (
-            <span className="tabplayer-group" role="group" aria-label="Гриф">
-              <button type="button" className="chip chip-icon" aria-pressed={neckShown} aria-label="Гриф" title="Гриф (G)" onClick={() => setNeckShown(!neckShown)}><PlayerIcon kind="neck" /></button>
-              {neckShown && key && <Segmented options={LABEL_MODES} value={neckLabels} onChange={setNeckLabels} />}
-            </span>
-          )}
         </div>
       </div>
 

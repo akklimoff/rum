@@ -136,3 +136,58 @@ test('a cross takes the open position over a dot on that string', () => {
 test('no crosses unless strings are muted', () => {
   expect(renderBoard([]).querySelectorAll('.fretboard-muted')).toHaveLength(0);
 });
+
+const renderVertical = (dots: FretboardDot[], mutedStrings: number[] = []) =>
+  render(
+    <Fretboard
+      dots={dots}
+      stringCount={6}
+      fretCount={15}
+      ariaLabel="Гриф"
+      orientation="vertical"
+      mutedStrings={mutedStrings}
+      onPositionClick={() => {}}
+    />,
+  ).container;
+
+const numberAttr = (element: Element, name: string) => Number(element.getAttribute(name));
+
+test('a vertical neck puts the nut on top and the bass string on the left', () => {
+  const board = renderVertical([dot({ string: 5, fret: 1 }), dot({ string: 0, fret: 3 })]);
+  const [bass, treble] = [...board.querySelectorAll('[data-dot] circle')];
+  expect(numberAttr(bass!, 'cx')).toBeLessThan(numberAttr(treble!, 'cx'));
+  expect(numberAttr(treble!, 'cy')).toBeGreaterThan(numberAttr(bass!, 'cy'));
+  const nut = board.querySelector('.fretboard-nut')!;
+  expect(nut.getAttribute('y1')).toBe(nut.getAttribute('y2'));
+  expect(numberAttr(nut, 'y1')).toBeLessThan(numberAttr(bass!, 'cy'));
+});
+
+test('a vertical neck keeps labels upright', () => {
+  const board = renderVertical([dot({})]);
+  const [, , width, height] = board.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number);
+  expect(height).toBeGreaterThan(width!);
+  expect(board.querySelector('[data-dot] text')).toHaveTextContent('5');
+  expect(board.querySelectorAll('[transform], [rotate]')).toHaveLength(0);
+});
+
+test('a vertical neck numbers frets on the left and crosses muted strings above the nut', () => {
+  const board = renderVertical([dot({ string: 5, fret: 1 })], [5]);
+  const bass = board.querySelector('[data-dot] circle')!;
+  const number = board.querySelector('[data-fret-number]')!;
+  expect(numberAttr(number, 'x')).toBeLessThan(numberAttr(bass, 'cx') - 12);
+  const cross = board.querySelector('.fretboard-muted')!;
+  expect(cross.getAttribute('x')).toBe(bass.getAttribute('cx'));
+  expect(numberAttr(cross, 'y')).toBeLessThan(numberAttr(board.querySelector('.fretboard-nut')!, 'y1'));
+});
+
+test('a vertical tap zone covers its own position', () => {
+  const board = renderVertical([dot({ string: 5, fret: 1 })]);
+  const centre = board.querySelector('[data-dot] circle')!;
+  const zone = board.querySelector('[data-hit="5:1"]')!;
+  const [cx, cy] = [numberAttr(centre, 'cx'), numberAttr(centre, 'cy')];
+  expect(numberAttr(zone, 'height')).toBeGreaterThan(numberAttr(zone, 'width'));
+  expect(cx).toBeGreaterThan(numberAttr(zone, 'x'));
+  expect(cx).toBeLessThan(numberAttr(zone, 'x') + numberAttr(zone, 'width'));
+  expect(cy).toBeGreaterThan(numberAttr(zone, 'y'));
+  expect(cy).toBeLessThan(numberAttr(zone, 'y') + numberAttr(zone, 'height'));
+});

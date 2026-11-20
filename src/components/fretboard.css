@@ -5,6 +5,10 @@
   height: auto;
 }
 
+.fretboard[data-orientation='vertical'] {
+  min-width: 0;
+}
+
 .fretboard-inlay {
   fill: var(--fret);
 }

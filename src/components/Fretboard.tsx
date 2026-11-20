@@ -17,6 +17,8 @@ export interface FretboardLink {
   to: { string: number; fret: number };
 }
 
+export type FretboardOrientation = 'horizontal' | 'vertical';
+
 interface FretboardProps {
   dots: FretboardDot[];
   stringCount: number;
@@ -25,70 +27,113 @@ interface FretboardProps {
   replayKey?: string;
   links?: FretboardLink[];
   mutedStrings?: readonly number[];
+  orientation?: FretboardOrientation;
   onPositionClick?: (string: number, fret: number) => void;
 }
 
-const NUT_X = 46;
-const OPEN_X = 22;
-const FRET_WIDTH = 52;
-const TOP_Y = 24;
+interface Point {
+  x: number;
+  y: number;
+}
+
+const OPEN = 22;
+const NUT = 46;
+const FRET_SPAN = 52;
+const NECK_END = 8;
+const FIRST_STRING = 24;
 const STRING_GAP = 28;
 const EDGE = 12;
+const NUMBERS_BEYOND_BASS = 34;
+const MARGIN_BEYOND_BASS = 46;
+const LABEL_BASELINE = 4;
 const CROSS_BASELINE = 5;
 const SINGLE_INLAYS = [3, 5, 7, 9, 15];
 const DOUBLE_INLAYS = [12];
 
 const range = (length: number) => Array.from({ length }, (_, i) => i);
-const fretCenterX = (fret: number) => (fret === 0 ? OPEN_X : NUT_X + FRET_WIDTH * (fret - 0.5));
-const stringY = (string: number) => TOP_Y + STRING_GAP * string;
-
-const totalWidth = (fretCount: number) => NUT_X + FRET_WIDTH * fretCount + 8;
+const fretCenter = (fret: number) => (fret === 0 ? OPEN : NUT + FRET_SPAN * (fret - 0.5));
+const fretWire = (fret: number) => NUT + FRET_SPAN * fret;
+const stringLine = (string: number) => FIRST_STRING + STRING_GAP * string;
+const neckLength = (fretCount: number) => fretWire(fretCount) + NECK_END;
 
 export function fretPositionRatio(fret: number, fretCount: number): number {
-  return fretCenterX(fret) / totalWidth(fretCount);
+  return fretCenter(fret) / neckLength(fretCount);
 }
 
-export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, links = [], mutedStrings = [], onPositionClick }: FretboardProps) {
-  const boardWidth = FRET_WIDTH * fretCount;
-  const boardBottom = stringY(stringCount - 1);
-  const width = totalWidth(fretCount);
-  const height = boardBottom + 46;
-  const middleY = (TOP_Y + boardBottom) / 2;
+function neckCanvas(orientation: FretboardOrientation, stringCount: number, fretCount: number) {
+  const length = neckLength(fretCount);
+  const breadth = stringLine(stringCount - 1) + MARGIN_BEYOND_BASS;
+  const vertical = orientation === 'vertical';
+  const place = (along: number, across: number): Point => (vertical ? { x: breadth - across, y: along } : { x: along, y: across });
+  return {
+    width: vertical ? breadth : length,
+    height: vertical ? length : breadth,
+    place,
+    point: (string: number, fret: number) => place(fretCenter(fret), stringLine(string)),
+  };
+}
+
+const circleAt = ({ x, y }: Point) => ({ cx: x, cy: y });
+const textAt = ({ x, y }: Point, baseline: number) => ({ x, y: y + baseline });
+const lineBetween = (from: Point, to: Point) => ({ x1: from.x, y1: from.y, x2: to.x, y2: to.y });
+const boxBetween = (a: Point, b: Point) => ({
+  x: Math.min(a.x, b.x),
+  y: Math.min(a.y, b.y),
+  width: Math.abs(b.x - a.x),
+  height: Math.abs(b.y - a.y),
+});
+
+export function Fretboard({
+  dots,
+  stringCount,
+  fretCount,
+  ariaLabel,
+  replayKey,
+  links = [],
+  mutedStrings = [],
+  orientation = 'horizontal',
+  onPositionClick,
+}: FretboardProps) {
+  const { width, height, place, point } = neckCanvas(orientation, stringCount, fretCount);
+  const bassString = stringCount - 1;
+  const middleString = bassString / 2;
+  const boardStart = stringLine(0) - EDGE;
+  const boardEnd = stringLine(bassString) + EDGE;
 
   return (
-    <svg className="fretboard" viewBox={`0 0 ${width} ${height}`} role="group" aria-label={ariaLabel}>
+    <svg className="fretboard" data-orientation={orientation} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={ariaLabel}>
       <g aria-hidden="true">
       {SINGLE_INLAYS.filter((fret) => fret <= fretCount).map((fret) => (
-        <circle key={fret} className="fretboard-inlay" cx={fretCenterX(fret)} cy={middleY} r={5} />
+        <circle key={fret} className="fretboard-inlay" {...circleAt(point(middleString, fret))} r={5} />
       ))}
       {DOUBLE_INLAYS.filter((fret) => fret <= fretCount).flatMap((fret) =>
-        [-STRING_GAP, STRING_GAP].map((offset) => (
-          <circle key={`${fret}:${offset}`} className="fretboard-inlay" cx={fretCenterX(fret)} cy={middleY + offset} r={5} />
+        [middleString - 1, middleString + 1].map((string) => (
+          <circle key={`${fret}:${string}`} className="fretboard-inlay" {...circleAt(point(string, fret))} r={5} />
         )),
       )}
       {range(fretCount + 1).map((fret) => (
         <line
           key={fret}
           className={fret === 0 ? 'fretboard-nut' : 'fretboard-fret'}
-          x1={NUT_X + FRET_WIDTH * fret}
-          x2={NUT_X + FRET_WIDTH * fret}
-          y1={TOP_Y - EDGE}
-          y2={boardBottom + EDGE}
+          {...lineBetween(place(fretWire(fret), boardStart), place(fretWire(fret), boardEnd))}
         />
       ))}
       {range(stringCount).map((string) => (
         <line
           key={string}
           className="fretboard-string"
-          x1={NUT_X}
-          x2={NUT_X + boardWidth}
-          y1={stringY(string)}
-          y2={stringY(string)}
+          {...lineBetween(place(fretWire(0), stringLine(string)), place(fretWire(fretCount), stringLine(string)))}
           strokeWidth={1 + string * 0.35}
         />
       ))}
       {range(fretCount + 1).map((fret) => (
-        <text key={fret} className="fretboard-number" data-fret-number x={fretCenterX(fret)} y={height - 8} textAnchor="middle">
+        <text
+          key={fret}
+          className="fretboard-number"
+          data-fret-number
+          {...textAt(place(fretCenter(fret), stringLine(bassString) + NUMBERS_BEYOND_BASS), LABEL_BASELINE)}
+          textAnchor="middle"
+        >
           {fret}
         </text>
       ))}
@@ -99,10 +144,7 @@ export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, 
           key={`${from.string}:${from.fret}-${to.string}:${to.fret}`}
           className="fretboard-link"
           aria-hidden="true"
-          x1={fretCenterX(from.fret)}
-          y1={stringY(from.string)}
-          x2={fretCenterX(to.fret)}
-          y2={stringY(to.string)}
+          {...lineBetween(point(from.string, from.fret), point(to.string, to.fret))}
         />
       ))}
       {mutedStrings.map((string) => (
@@ -110,8 +152,7 @@ export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, 
           key={`muted:${string}`}
           className="fretboard-muted"
           aria-hidden="true"
-          x={fretCenterX(0)}
-          y={stringY(string) + CROSS_BASELINE}
+          {...textAt(point(string, 0), CROSS_BASELINE)}
           textAnchor="middle"
         >
           ×
@@ -132,12 +173,11 @@ export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, 
         >
           <title>{dot.description}</title>
           <circle
-            cx={fretCenterX(dot.fret)}
-            cy={stringY(dot.string)}
+            {...circleAt(point(dot.string, dot.fret))}
             r={dot.isTonic ? 11.5 : 10}
             style={dot.degreeNumber === null ? undefined : { fill: `var(--d${dot.degreeNumber})` }}
           />
-          <text x={fretCenterX(dot.fret)} y={stringY(dot.string) + 4} textAnchor="middle">
+          <text {...textAt(point(dot.string, dot.fret), LABEL_BASELINE)} textAnchor="middle">
             {dot.label}
           </text>
         </g>
@@ -151,10 +191,10 @@ export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, 
                 key={`${string}:${fret}`}
                 className="fretboard-hit"
                 data-hit={`${string}:${fret}`}
-                x={fret === 0 ? 0 : NUT_X + FRET_WIDTH * (fret - 1)}
-                y={stringY(string) - STRING_GAP / 2}
-                width={fret === 0 ? NUT_X : FRET_WIDTH}
-                height={STRING_GAP}
+                {...boxBetween(
+                  place(fret === 0 ? 0 : fretWire(fret - 1), stringLine(string) - STRING_GAP / 2),
+                  place(fretWire(fret), stringLine(string) + STRING_GAP / 2),
+                )}
                 onClick={() => onPositionClick(string, fret)}
               />
             )),
