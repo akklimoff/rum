@@ -499,7 +499,7 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
       )}
 
       <div className="tabplayer-stage" data-side={wide && neckView ? '' : undefined}>
-        {wide && neckView && <aside className="tabplayer-side" aria-label="Гриф">{neckView}</aside>}
+        {wide && neckView && <aside className="tabplayer-side" aria-label="Гриф текущего такта">{neckView}</aside>}
         <div className="tabplayer-main">
           <div className="tabplayer-surface" ref={surface} />
           {status === 'error' && <p className="tabplayer-note" role="alert">Не удалось загрузить табулатуру.</p>}
