@@ -21,6 +21,10 @@ test('each part is shifted by its own capo', () => {
     .toEqual(['Bm', 'C', 'F']);
 });
 
+test('a part without a capo is written with ♯ and ♭ as well', () => {
+  expect(harmonyTimeline([part(0, mark(0, 0, 'E/G#'), mark(1, 3840, 'Bb7b9'))]).map((c) => c.name)).toEqual(['E/G♯', 'B♭7♭9']);
+});
+
 test('no chord marks anywhere means no harmony', () => {
   expect(harmonyTimeline([part(0)])).toEqual([]);
   expect(harmonyTimeline([])).toEqual([]);

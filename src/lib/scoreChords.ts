@@ -1,5 +1,6 @@
 import type * as AlphaTab from '@coderline/alphatab';
 import { chordPlacements, harmonyTimeline, type BeatSpan, type ChordChange, type ChordMark } from './harmony';
+import { spellChordName } from './theory';
 
 export function chordMarks(track: AlphaTab.model.Track): ChordMark[] {
   const staff = track.staves[0];
@@ -17,7 +18,14 @@ export function songHarmony(score: AlphaTab.model.Score): ChordChange[] {
   return harmonyTimeline(pitchedTracks(score).map((track) => ({ capo: track.staves[0]!.capo, marks: chordMarks(track) })));
 }
 
+function spellOwnChords(score: AlphaTab.model.Score): void {
+  for (const staff of score.tracks.flatMap((track) => track.staves)) {
+    for (const chord of staff.chords?.values() ?? []) chord.name = spellChordName(chord.name);
+  }
+}
+
 export function addHarmony(alphaTab: typeof AlphaTab, score: AlphaTab.model.Score, timeline: readonly ChordChange[]): void {
+  spellOwnChords(score);
   if (timeline.length === 0) return;
   for (const track of pitchedTracks(score)) {
     if (chordMarks(track).length > 0) continue;

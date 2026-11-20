@@ -15,6 +15,6 @@ export { INTERVALS, intervalInfo, intervalNoteNames, intervalShapes } from './in
 export type { IntervalId, IntervalInfo, NeckPosition } from './intervals';
 export { detectKey, keyShortName } from './key';
 export type { DetectedKey } from './key';
-export { chordRoman, transposeChordName } from './chordSymbols';
+export { chordRoman, spellChordName, transposeChordName } from './chordSymbols';
 export { chordVoicings } from './voicings';
 export type { Voicing } from './voicings';

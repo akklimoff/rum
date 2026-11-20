@@ -15,12 +15,30 @@ const MARKS: Record<string, string> = {
   'major seventh': 'maj7',
 };
 
-const toAscii = (name: string) =>
-  name.replaceAll('♯', '#').replaceAll('♭', 'b').replaceAll('(', '').replaceAll(')', '');
+// Not Chord.tokenize: it drops spaces after the root ("A7 sus4" → "7sus4"), and names from files keep their text.
+const CHORD_PARTS = /^([A-G](?:#+|b+)?)(.*?)(?:\/([A-G](?:#+|b+)?))?$/;
+
+const asciiAccidentals = (name: string) => name.replaceAll('♯', '#').replaceAll('♭', 'b');
+
+const toAscii = (name: string) => asciiAccidentals(name).replaceAll('(', '').replaceAll(')', '');
+
+const spellSuffix = (suffix: string) => suffix.replaceAll('#', '♯').replace(/b(?=\d)/g, '♭');
+
+function spell(ascii: string, moveNote: (note: string) => string): string {
+  const parts = CHORD_PARTS.exec(ascii);
+  if (!parts) return spellSuffix(ascii);
+  const [, root, suffix, bass] = parts;
+  return `${formatNote(moveNote(root!))}${spellSuffix(suffix!)}${bass ? `/${formatNote(moveNote(bass))}` : ''}`;
+}
+
+export function spellChordName(name: string): string {
+  return spell(asciiAccidentals(name), (note) => note);
+}
 
 export function transposeChordName(name: string, semitones: number): string {
-  if (semitones === 0) return name;
-  return formatNote(Chord.transpose(toAscii(name), Interval.fromSemitones(semitones)));
+  if (semitones === 0) return spellChordName(name);
+  const interval = Interval.fromSemitones(semitones);
+  return spell(toAscii(name), (note) => Note.simplify(Note.transpose(note, interval)));
 }
 
 export function chordRoman(name: string, key: DetectedKey): { roman: string; degreeNumber: DegreeNumber | null } {

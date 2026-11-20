@@ -41,3 +41,28 @@ test('a capo shifts chord shapes to what sounds', () => {
   expect(transposeChordName('C♯m7(♭5)', 7)).toBe('G♯m7♭5');
   expect(transposeChordName('Gadd11', 0)).toBe('Gadd11');
 });
+
+test('names without a capo are shown with ♯ and ♭ too', () => {
+  expect(transposeChordName('E/G#', 0)).toBe('E/G♯');
+  expect(transposeChordName('C#m7b5', 0)).toBe('C♯m7♭5');
+  expect(transposeChordName('Bbm7(b5)/Ab', 0)).toBe('B♭m7(♭5)/A♭');
+  expect(transposeChordName('E7#9', 0)).toBe('E7♯9');
+  expect(transposeChordName('F#7 sus4', 0)).toBe('F♯7 sus4');
+  expect(transposeChordName('N.C.', 0)).toBe('N.C.');
+});
+
+test('a lowercase b that is not a flat stays a letter', () => {
+  expect(transposeChordName('Bbsus2 (barre)', 0)).toBe('B♭sus2 (barre)');
+  expect(transposeChordName('Ebsus4 barre', 2)).toBe('Fsus4 barre');
+});
+
+test('a capo never spells a chord with E♯, B♯, C♭, F♭ or a double flat', () => {
+  expect(transposeChordName('C♯m', 4)).toBe('Fm');
+  expect(transposeChordName('G♯m', 4)).toBe('Cm');
+  expect(transposeChordName('B♭', 1)).toBe('B');
+  expect(transposeChordName('A♭maj7', 1)).toBe('Amaj7');
+  expect(transposeChordName('E♭', 6)).toBe('A');
+  expect(transposeChordName('E♭', 8)).toBe('B');
+  expect(transposeChordName('G♯m', 9)).toBe('Fm');
+  expect(transposeChordName('A/C♯', 4)).toBe('C♯/F');
+});

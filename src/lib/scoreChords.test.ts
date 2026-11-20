@@ -34,6 +34,31 @@ test.skipIf(!existsSync(OASIS))('after adding the harmony the lead part shows ch
   expect(chordMarks(oasis.tracks[2]!).map((m) => m.name)).toEqual(ownNames);
 });
 
+const allChordNames = (score: alphaTab.model.Score) =>
+  score.tracks.flatMap((track) => track.staves.flatMap((staff) => [...(staff.chords?.values() ?? [])].map((chord) => chord.name)));
+
+test.skipIf(!existsSync(OASIS))('the piano harmony over the lead part is written with ♯ and ♭', () => {
+  const oasis = load(OASIS);
+  addHarmony(alphaTab, oasis, songHarmony(oasis));
+  expect(chordMarks(oasis.tracks[3]!).map((m) => m.name)).toContain('E/G♯');
+});
+
+for (const path of [WYWH, OASIS]) {
+  test.skipIf(!existsSync(path))(`${path}: after adding the harmony no chord name on any track has # or a b flat`, () => {
+    const score = load(path);
+    addHarmony(alphaTab, score, songHarmony(score));
+    expect(allChordNames(score).filter((name) => /#|[A-G]b|b\d/.test(name))).toEqual([]);
+  });
+}
+
+test.skipIf(!existsSync(WYWH))("the keyboard's own A/C# is respelled in place", () => {
+  const wywh = load(WYWH);
+  const before = chordMarks(wywh.tracks[8]!).map((m) => m.tick);
+  addHarmony(alphaTab, wywh, songHarmony(wywh));
+  expect(chordMarks(wywh.tracks[8]!).map((m) => m.tick)).toEqual(before);
+  expect(chordMarks(wywh.tracks[8]!).map((m) => m.name)).toContain('A/C♯');
+});
+
 test.skipIf(!existsSync(OASIS))('a song without chords is left as it was', () => {
   const oasis = load(OASIS);
   const before = oasis.tracks.map((track) => chordMarks(track).length);
