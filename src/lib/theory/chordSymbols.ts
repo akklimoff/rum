@@ -3,25 +3,17 @@ import { formatNote } from './notes';
 import type { DetectedKey } from './key';
 import { scaleNotes, type DegreeNumber } from './scales';
 
-interface RomanMark {
-  lowerCase: boolean;
-  mark: string;
-}
-
 const ROMAN_BY_SEMITONES = ['I', '♭II', 'II', '♭III', 'III', 'IV', '♭V', 'V', '♭VI', 'VI', '♭VII', 'VII'];
 
-const MARKS: Record<string, RomanMark> = {
-  minor: { lowerCase: true, mark: '' },
-  'minor seventh': { lowerCase: true, mark: '7' },
-  diminished: { lowerCase: true, mark: '°' },
-  'half-diminished': { lowerCase: true, mark: 'ø7' },
-  'diminished seventh': { lowerCase: true, mark: '°7' },
-  augmented: { lowerCase: false, mark: '+' },
-  'dominant seventh': { lowerCase: false, mark: '7' },
-  'major seventh': { lowerCase: false, mark: 'maj7' },
+const MARKS: Record<string, string> = {
+  'minor seventh': '7',
+  diminished: '°',
+  'half-diminished': 'ø7',
+  'diminished seventh': '°7',
+  augmented: '+',
+  'dominant seventh': '7',
+  'major seventh': 'maj7',
 };
-
-const PLAIN: RomanMark = { lowerCase: false, mark: '' };
 
 const toAscii = (name: string) =>
   name.replaceAll('♯', '#').replaceAll('♭', 'b').replaceAll('(', '').replaceAll(')', '');
@@ -35,10 +27,12 @@ export function chordRoman(name: string, key: DetectedKey): { roman: string; deg
   const ascii = toAscii(name).split('/')[0]!;
   const root = /^[A-G][#b]*/.exec(ascii)?.[0];
   const rootPc = root === undefined ? null : Note.chroma(root);
-  if (rootPc === null || rootPc === undefined) return { roman: ascii, degreeNumber: null };
+  if (rootPc === null || rootPc === undefined) return { roman: '', degreeNumber: null };
 
   const numeral = ROMAN_BY_SEMITONES[(rootPc - key.tonicPc + 12) % 12]!;
-  const { lowerCase, mark } = MARKS[Chord.get(ascii).type] ?? PLAIN;
+  const { type, quality } = Chord.get(ascii);
+  const lowerCase = quality === 'Minor' || quality === 'Diminished';
+  const mark = MARKS[type] ?? '';
   const degreeNumber = scaleNotes(key.tonicPc, key.scale).find((note) => note.pc === rootPc)?.degreeNumber ?? null;
   return { roman: `${lowerCase ? numeral.toLowerCase() : numeral}${mark}`, degreeNumber };
 }

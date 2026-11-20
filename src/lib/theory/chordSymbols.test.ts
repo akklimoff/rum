@@ -13,6 +13,14 @@ test('a minor seventh is lowercase with a 7', () => {
   expect(chordRoman('Em7', { tonicPc: 7, scale: 'major' }).roman).toBe('vi7');
 });
 
+test('extended and added-tone minor chords stay lowercase without extra marks', () => {
+  expect(['Am9', 'Am6', 'Amadd9'].map((n) => chordRoman(n, C).roman)).toEqual(['vi', 'vi', 'vi']);
+});
+
+test('a name without a root has no numeral', () => {
+  expect(chordRoman('N.C.', C)).toEqual({ roman: '', degreeNumber: null });
+});
+
 test('roman numerals in a minor key are counted from the major scale', () => {
   expect(['Am', 'C', 'G', 'E', 'Bdim', 'F'].map((n) => chordRoman(n, Am).roman))
     .toEqual(['i', '♭III', '♭VII', 'V', 'ii°', '♭VI']);
