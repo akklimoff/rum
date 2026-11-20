@@ -66,3 +66,8 @@ test('a capo never spells a chord with E♯, B♯, C♭, F♭ or a double flat',
   expect(transposeChordName('G♯m', 9)).toBe('Fm');
   expect(transposeChordName('A/C♯', 4)).toBe('C♯/F');
 });
+
+test('augmented and minor-major sevenths are marked as in the chord tool', () => {
+  const F = { tonicPc: 5, scale: 'major' } as const;
+  expect(['C7♯5', 'C+7', 'Cmaj7♯5', 'CmMaj7'].map((n) => chordRoman(n, F).roman)).toEqual(['V+7', 'V+7', 'V+maj7', 'vmaj7']);
+});

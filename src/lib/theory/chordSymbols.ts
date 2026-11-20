@@ -13,6 +13,9 @@ const MARKS: Record<string, string> = {
   augmented: '+',
   'dominant seventh': '7',
   'major seventh': 'maj7',
+  'minor/major seventh': 'maj7',
+  'seventh augmented fifth': '+7',
+  'augmented seventh': '+maj7',
 };
 
 // Not Chord.tokenize: it drops spaces after the root ("A7 sus4" → "7sus4"), and names from files keep their text.
