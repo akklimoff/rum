@@ -15,3 +15,4 @@ export { INTERVALS, intervalInfo, intervalNoteNames, intervalShapes } from './in
 export type { IntervalId, IntervalInfo, NeckPosition } from './intervals';
 export { detectKey, keyShortName } from './key';
 export type { DetectedKey } from './key';
+export { chordRoman, transposeChordName } from './chordSymbols';
