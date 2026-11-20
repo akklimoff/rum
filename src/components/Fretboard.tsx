@@ -28,6 +28,7 @@ interface FretboardProps {
   links?: FretboardLink[];
   mutedStrings?: readonly number[];
   orientation?: FretboardOrientation;
+  startFret?: number;
   onPositionClick?: (string: number, fret: number) => void;
 }
 
@@ -60,16 +61,22 @@ export function fretPositionRatio(fret: number, fretCount: number): number {
   return fretCenter(fret) / neckLength(fretCount);
 }
 
-function neckCanvas(orientation: FretboardOrientation, stringCount: number, fretCount: number) {
+function neckCanvas(orientation: FretboardOrientation, stringCount: number, fretCount: number, startFret: number) {
   const length = neckLength(fretCount);
   const breadth = stringLine(stringCount - 1) + MARGIN_BEYOND_BASS;
   const vertical = orientation === 'vertical';
+  // The window's first fret takes fret 1's place, so the open-string row above it stays free for the crosses.
+  const shift = Math.max(startFret - 1, 0);
   const place = (along: number, across: number): Point => (vertical ? { x: breadth - across, y: along } : { x: along, y: across });
+  const fretAlong = (fret: number) => fretCenter(fret - shift);
   return {
     width: vertical ? breadth : length,
     height: vertical ? length : breadth,
+    frets: range(fretCount + 1).map((slot) => shift + slot),
     place,
-    point: (string: number, fret: number) => place(fretCenter(fret), stringLine(string)),
+    fretAlong,
+    wireAlong: (fret: number) => fretWire(fret - shift),
+    point: (string: number, fret: number) => place(fretAlong(fret), stringLine(string)),
   };
 }
 
@@ -92,9 +99,11 @@ export function Fretboard({
   links = [],
   mutedStrings = [],
   orientation = 'horizontal',
+  startFret = 0,
   onPositionClick,
 }: FretboardProps) {
-  const { width, height, place, point } = neckCanvas(orientation, stringCount, fretCount);
+  const { width, height, frets, place, fretAlong, wireAlong, point } = neckCanvas(orientation, stringCount, fretCount, startFret);
+  const [openSlot, lastFret] = [frets[0]!, frets.at(-1)!];
   const bassString = stringCount - 1;
   const middleString = bassString / 2;
   const boardStart = stringLine(0) - EDGE;
@@ -103,35 +112,35 @@ export function Fretboard({
   return (
     <svg className="fretboard" data-orientation={orientation} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={ariaLabel}>
       <g aria-hidden="true">
-      {SINGLE_INLAYS.filter((fret) => fret <= fretCount).map((fret) => (
+      {SINGLE_INLAYS.filter((fret) => fret > openSlot && fret <= lastFret).map((fret) => (
         <circle key={fret} className="fretboard-inlay" {...circleAt(point(middleString, fret))} r={5} />
       ))}
-      {DOUBLE_INLAYS.filter((fret) => fret <= fretCount).flatMap((fret) =>
+      {DOUBLE_INLAYS.filter((fret) => fret > openSlot && fret <= lastFret).flatMap((fret) =>
         [middleString - 1, middleString + 1].map((string) => (
           <circle key={`${fret}:${string}`} className="fretboard-inlay" {...circleAt(point(string, fret))} r={5} />
         )),
       )}
-      {range(fretCount + 1).map((fret) => (
+      {frets.map((fret) => (
         <line
           key={fret}
-          className={fret === 0 ? 'fretboard-nut' : 'fretboard-fret'}
-          {...lineBetween(place(fretWire(fret), boardStart), place(fretWire(fret), boardEnd))}
+          className={fret === 0 && startFret === 0 ? 'fretboard-nut' : 'fretboard-fret'}
+          {...lineBetween(place(wireAlong(fret), boardStart), place(wireAlong(fret), boardEnd))}
         />
       ))}
       {range(stringCount).map((string) => (
         <line
           key={string}
           className="fretboard-string"
-          {...lineBetween(place(fretWire(0), stringLine(string)), place(fretWire(fretCount), stringLine(string)))}
+          {...lineBetween(place(wireAlong(openSlot), stringLine(string)), place(wireAlong(lastFret), stringLine(string)))}
           strokeWidth={1 + string * 0.35}
         />
       ))}
-      {range(fretCount + 1).map((fret) => (
+      {frets.filter((fret) => fret >= startFret).map((fret) => (
         <text
           key={fret}
           className="fretboard-number"
           data-fret-number
-          {...textAt(place(fretCenter(fret), stringLine(bassString) + NUMBERS_BEYOND_BASS), LABEL_BASELINE)}
+          {...textAt(place(fretAlong(fret), stringLine(bassString) + NUMBERS_BEYOND_BASS), LABEL_BASELINE)}
           textAnchor="middle"
         >
           {fret}
@@ -152,7 +161,7 @@ export function Fretboard({
           key={`muted:${string}`}
           className="fretboard-muted"
           aria-hidden="true"
-          {...textAt(point(string, 0), CROSS_BASELINE)}
+          {...textAt(point(string, openSlot), CROSS_BASELINE)}
           textAnchor="middle"
         >
           ×
@@ -186,14 +195,14 @@ export function Fretboard({
       {onPositionClick && (
         <g aria-hidden="true">
           {range(stringCount).flatMap((string) =>
-            range(fretCount + 1).map((fret) => (
+            frets.map((fret) => (
               <rect
                 key={`${string}:${fret}`}
                 className="fretboard-hit"
                 data-hit={`${string}:${fret}`}
                 {...boxBetween(
-                  place(fret === 0 ? 0 : fretWire(fret - 1), stringLine(string) - STRING_GAP / 2),
-                  place(fretWire(fret), stringLine(string) + STRING_GAP / 2),
+                  place(fret === openSlot ? 0 : wireAlong(fret - 1), stringLine(string) - STRING_GAP / 2),
+                  place(wireAlong(fret), stringLine(string) + STRING_GAP / 2),
                 )}
                 onClick={() => onPositionClick(string, fret)}
               />

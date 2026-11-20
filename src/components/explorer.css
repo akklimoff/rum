@@ -171,6 +171,54 @@
   padding: 10px 6px 2px;
 }
 
+.chord-shapes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chord-shapes li {
+  flex: 1 1 130px;
+  max-width: 160px;
+  animation: rise-in 0.45s var(--ease-out) backwards;
+}
+
+.chord-shape {
+  display: block;
+  width: 100%;
+  padding: 6px 4px 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), box-shadow 0.3s var(--ease-out),
+    transform 0.4s var(--ease-spring);
+}
+
+.chord-shape:hover {
+  background: var(--raise);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+}
+
+.chord-shape:active {
+  transform: scale(0.96);
+}
+
+.chord-shape[aria-pressed='true'] {
+  background: var(--glow);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  animation: chip-pop 0.45s var(--ease-spring);
+}
+
+.chord-shape .fretboard-number {
+  font-size: 15px;
+}
+
 .explorer-chords {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));

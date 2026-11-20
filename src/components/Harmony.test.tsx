@@ -1,9 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
+import { STRUM, playNotes } from '../lib/audio';
 import { ChordExplorer } from './ChordExplorer';
 import { FretboardExplorer } from './FretboardExplorer';
 import { ProgressionExplorer } from './ProgressionExplorer';
+
+vi.mock('../lib/audio', async (importOriginal) => ({ ...(await importOriginal<object>()), playNotes: vi.fn() }));
 
 const group = (name: string) => screen.getByRole('group', { name });
 const click = (groupName: string, name: string) => userEvent.click(within(group(groupName)).getByRole('button', { name }));
@@ -24,6 +27,53 @@ test('the chord builder opens on C major and rebuilds on choice', async () => {
 test('a lesson can embed a tool with a second-level heading and a preset', () => {
   render(<ChordExplorer embedded initialType="7" />);
   expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('C7');
+});
+
+const shapeButtons = () => within(screen.getByRole('list', { name: 'Формы' })).getAllByRole('button');
+const litDots = (neck: HTMLElement) =>
+  [...neck.querySelectorAll('[data-dot]:not([data-dimmed])')].map((dot) => dot.getAttribute('aria-label')!.split(':')[0]);
+
+test('pressing a shape dims the neck outside it and strums it from the bass up', async () => {
+  render(<ChordExplorer />);
+  const neck = group('Гриф: аккорд C');
+  const allDots = neck.querySelectorAll('[data-dot]').length;
+  const [open] = shapeButtons();
+  await userEvent.click(open!);
+  expect(open).toHaveAttribute('aria-pressed', 'true');
+  expect(neck.querySelectorAll('[data-dot][data-dimmed]').length).toBeGreaterThan(0);
+  expect(litDots(neck)).toEqual(['Струна 1, лад 0', 'Струна 2, лад 1', 'Струна 3, лад 0', 'Струна 4, лад 2', 'Струна 5, лад 3']);
+  expect(playNotes).toHaveBeenLastCalledWith([48, 52, 55, 60, 64], STRUM);
+  await userEvent.click(open!);
+  expect(open).toHaveAttribute('aria-pressed', 'false');
+  expect(neck.querySelectorAll('[data-dot][data-dimmed]')).toHaveLength(0);
+  expect(neck.querySelectorAll('[data-dot]')).toHaveLength(allDots);
+});
+
+test('a new root or chord type clears the chosen shape', async () => {
+  render(<ChordExplorer />);
+  await userEvent.click(shapeButtons()[1]!);
+  await click('Основной тон', 'D');
+  expect(group('Гриф: аккорд D').querySelectorAll('[data-dimmed]')).toHaveLength(0);
+  expect(shapeButtons().every((button) => button.getAttribute('aria-pressed') === 'false')).toBe(true);
+  await userEvent.click(shapeButtons()[0]!);
+  await click('Трезвучия', 'минор');
+  expect(group('Гриф: аккорд Dm').querySelectorAll('[data-dimmed]')).toHaveLength(0);
+});
+
+test('shape diagrams start at their own fret and follow the labels switch', async () => {
+  render(<ChordExplorer />);
+  const diagrams = shapeButtons().map((button) => button.querySelector('svg')!);
+  expect(diagrams.every((svg) => svg.getAttribute('data-orientation') === 'vertical')).toBe(true);
+  const open = diagrams[0]!;
+  expect(open.querySelector('.fretboard-nut')).not.toBeNull();
+  expect(open.querySelectorAll('.fretboard-muted')).toHaveLength(1);
+  const labels = () => [...open.querySelectorAll('[data-dot] text')].map((text) => text.textContent);
+  expect(labels()).toEqual(['3', '1', '5', '3', '1']);
+  const high = diagrams.at(-1)!;
+  expect(high.querySelector('.fretboard-nut')).toBeNull();
+  expect(high.querySelector('[data-fret-number]')).toHaveTextContent('8');
+  await click('Подписи', 'ноты');
+  expect(labels()).toEqual(['E', 'C', 'G', 'E', 'C']);
 });
 
 test('progressions resolve in the chosen key and highlight the picked chord', async () => {

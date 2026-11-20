@@ -191,3 +191,36 @@ test('a vertical tap zone covers its own position', () => {
   expect(cy).toBeGreaterThan(numberAttr(zone, 'y'));
   expect(cy).toBeLessThan(numberAttr(zone, 'y') + numberAttr(zone, 'height'));
 });
+
+test('a window from the 5th fret numbers 5 beside it and draws no nut', () => {
+  const { container } = render(
+    <Fretboard
+      dots={[dot({ string: 5, fret: 5 }), dot({ string: 0, fret: 8 })]}
+      stringCount={6}
+      fretCount={4}
+      startFret={5}
+      ariaLabel="Форма"
+      orientation="vertical"
+      mutedStrings={[4]}
+    />,
+  );
+  expect(container.querySelector('.fretboard-nut')).toBeNull();
+  const numbers = [...container.querySelectorAll('[data-fret-number]')];
+  expect(numbers[0]).toHaveTextContent('5');
+  expect(numbers.map((n) => n.textContent)).toEqual(['5', '6', '7', '8']);
+  const [fifth, eighth] = [...container.querySelectorAll('[data-dot] circle')];
+  expect(numbers[0]!.getAttribute('y')).toBe(String(numberAttr(fifth!, 'cy') + 4));
+  expect(numberAttr(numbers[0]!, 'x')).toBeLessThan(numberAttr(fifth!, 'cx') - 12);
+  expect(numberAttr(eighth!, 'cy')).toBeGreaterThan(numberAttr(fifth!, 'cy'));
+  const firstLine = Math.min(...[...container.querySelectorAll('.fretboard-fret')].map((line) => numberAttr(line, 'y1')));
+  expect(numberAttr(fifth!, 'cy')).toBeGreaterThan(firstLine);
+  expect(numberAttr(container.querySelector('.fretboard-muted')!, 'y')).toBeLessThan(firstLine);
+});
+
+test('a window from the nut keeps the nut and the open position', () => {
+  const { container } = render(
+    <Fretboard dots={[dot({ string: 0, fret: 0 })]} stringCount={6} fretCount={4} startFret={0} ariaLabel="Форма" orientation="vertical" />,
+  );
+  expect(container.querySelectorAll('.fretboard-nut')).toHaveLength(1);
+  expect([...container.querySelectorAll('[data-fret-number]')].map((n) => n.textContent)).toEqual(['0', '1', '2', '3', '4']);
+});
