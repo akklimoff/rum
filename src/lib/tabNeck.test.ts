@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { scaleNotes } from './theory';
-import { tabNeckDots, tabNeckFocusFret, tabNeckLinks, type TabNote } from './tabNeck';
+import { tabNeckDots, tabNeckFocusFret, tabNeckLinks, tabNeckMutedStrings, type TabNote } from './tabNeck';
 
 const GUITAR = [64, 59, 55, 50, 45, 40];
 
@@ -84,4 +84,31 @@ test('open and dead strings do not pull the view to the nut, and an empty bar ke
 test('with note labels the dot keeps its degree colour but shows the note name', () => {
   const [third] = tabNeckDots([note(4, 7, 0)], GUITAR, B_MINOR, 'notes');
   expect(third).toMatchObject({ label: 'D', degreeNumber: 3 });
+});
+
+const soundingNote = (string: number, overrides: Partial<TabNote> = {}): TabNote => ({
+  string,
+  fret: 2,
+  beat: 0,
+  sounding: true,
+  dead: false,
+  ...overrides,
+});
+
+test('a chord on the sounding beat marks the strings it leaves out', () => {
+  expect(tabNeckMutedStrings([5, 4, 3].map((string) => soundingNote(string)), GUITAR)).toEqual([0, 4, 5]);
+});
+
+test('a melody note marks nothing', () => {
+  expect(tabNeckMutedStrings([soundingNote(3, { fret: 5 })], GUITAR)).toEqual([]);
+});
+
+test('a muted note counts as a played string', () => {
+  const chord = [soundingNote(6), soundingNote(5), soundingNote(4, { dead: true })];
+  expect(tabNeckMutedStrings(chord, GUITAR)).toEqual([3, 4, 5]);
+});
+
+test('notes of the dimmed rest of the bar do not count', () => {
+  const chord = [soundingNote(6), soundingNote(5), soundingNote(4), soundingNote(3, { sounding: false })];
+  expect(tabNeckMutedStrings(chord, GUITAR)).toEqual([3, 4, 5]);
 });

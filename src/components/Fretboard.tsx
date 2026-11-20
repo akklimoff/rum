@@ -24,6 +24,7 @@ interface FretboardProps {
   ariaLabel: string;
   replayKey?: string;
   links?: FretboardLink[];
+  mutedStrings?: readonly number[];
   onPositionClick?: (string: number, fret: number) => void;
 }
 
@@ -46,7 +47,7 @@ export function fretPositionRatio(fret: number, fretCount: number): number {
   return fretCenterX(fret) / totalWidth(fretCount);
 }
 
-export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, links = [], onPositionClick }: FretboardProps) {
+export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, links = [], mutedStrings = [], onPositionClick }: FretboardProps) {
   const boardWidth = FRET_WIDTH * fretCount;
   const boardBottom = stringY(stringCount - 1);
   const width = totalWidth(fretCount);
@@ -102,6 +103,18 @@ export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, 
           x2={fretCenterX(to.fret)}
           y2={stringY(to.string)}
         />
+      ))}
+      {mutedStrings.map((string) => (
+        <text
+          key={`muted:${string}`}
+          className="fretboard-muted"
+          aria-hidden="true"
+          x={fretCenterX(0)}
+          y={stringY(string) + 5}
+          textAnchor="middle"
+        >
+          ×
+        </text>
       ))}
       {dots.map((dot) => (
         <g

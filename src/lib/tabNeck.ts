@@ -66,3 +66,11 @@ export function tabNeckFocusFret(notes: TabNote[]): number | null {
   const frets = notes.filter((note) => !note.dead && note.fret > 0).map((note) => note.fret);
   return frets.length ? (Math.min(...frets) + Math.max(...frets)) / 2 : null;
 }
+
+const MIN_CHORD_STRINGS = 3;
+
+export function tabNeckMutedStrings(notes: TabNote[], tuning: readonly number[]): number[] {
+  const played = new Set(notes.filter((note) => note.sounding).map((note) => neckString(note, tuning)));
+  if (played.size < MIN_CHORD_STRINGS) return [];
+  return tuning.map((_, string) => string).filter((string) => !played.has(string));
+}

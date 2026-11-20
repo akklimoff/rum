@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import type * as AlphaTab from '@coderline/alphatab';
 import { shortcutAction, type ShortcutAction } from '../lib/shortcuts';
 import { sectionAt, songSections, type SongSection } from '../lib/sections';
-import { tabNeckDots, tabNeckFocusFret, tabNeckLinks, type NeckLabels, type TabNote } from '../lib/tabNeck';
+import { tabNeckDots, tabNeckFocusFret, tabNeckLinks, tabNeckMutedStrings, type NeckLabels, type TabNote } from '../lib/tabNeck';
 import { chordAt, type ChordChange } from '../lib/harmony';
 import { addHarmony, songHarmony } from '../lib/scoreChords';
 import { chordRoman, detectKey, keyShortName, keyTitle, scaleNotes, type DetectedKey } from '../lib/theory';
@@ -477,6 +477,7 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
                 <Fretboard
                   dots={tabNeckDots(neck.notes, neck.tuning, scale, neckLabels)}
                   links={tabNeckLinks(neck.notes, neck.tuning)}
+                  mutedStrings={tabNeckMutedStrings(neck.notes, neck.tuning)}
                   stringCount={neck.tuning.length}
                   fretCount={neck.fretCount}
                   ariaLabel="Гриф: ноты текущего такта"

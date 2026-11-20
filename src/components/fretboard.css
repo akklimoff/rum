@@ -29,6 +29,12 @@
   font-size: 11px;
 }
 
+.fretboard-muted {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+
 .fretboard-dot {
   transform-box: fill-box;
   transform-origin: center;

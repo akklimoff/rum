@@ -103,3 +103,17 @@ test('reports where along its width a fret sits, for callers that pan the neck',
   expect(fretPositionRatio(12, 12)).toBeGreaterThan(0.9);
   expect(fretPositionRatio(6.5, 12)).toBeCloseTo(0.5, 1);
 });
+
+test('muted strings get a cross at the nut', () => {
+  const { container } = render(
+    <Fretboard dots={[]} stringCount={6} fretCount={15} ariaLabel="Гриф" mutedStrings={[0, 5]} />,
+  );
+  const crosses = container.querySelectorAll('.fretboard-muted');
+  expect(crosses).toHaveLength(2);
+  expect([...crosses].map((cross) => cross.textContent)).toEqual(['×', '×']);
+  expect(crosses[0]!.getAttribute('aria-hidden')).toBe('true');
+});
+
+test('no crosses unless strings are muted', () => {
+  expect(renderBoard([]).querySelectorAll('.fretboard-muted')).toHaveLength(0);
+});
