@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import type * as AlphaTab from '@coderline/alphatab';
 import { shortcutAction, type ShortcutAction } from '../lib/shortcuts';
 import { sectionAt, songSections, type SongSection } from '../lib/sections';
 import { tabNeckDots, tabNeckFocusFret, tabNeckLinks, type NeckLabels, type TabNote } from '../lib/tabNeck';
-import { detectKey, keyShortName, keyTitle, scaleNotes, type DetectedKey } from '../lib/theory';
+import { chordAt, type ChordChange } from '../lib/harmony';
+import { addHarmony, songHarmony } from '../lib/scoreChords';
+import { chordRoman, detectKey, keyShortName, keyTitle, scaleNotes, type DetectedKey } from '../lib/theory';
 import { formatTime } from '../lib/time';
 import { kindOfTrack } from '../lib/trackKind';
 import { trackEntry, trackMenu, type TrackEntry } from '../lib/trackMenu';
@@ -130,6 +132,7 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
   const trackList = useRef<HTMLUListElement>(null);
   const progressFill = useRef<HTMLDivElement>(null);
   const sectionList = useRef<SongSection[]>([]);
+  const harmony = useRef<ChordChange[]>([]);
   const api = useRef<AlphaTab.AlphaTabApi | null>(null);
   const shortcuts = useRef<Record<ShortcutAction, () => void> | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -149,6 +152,7 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
   const [key, setKey] = useState<DetectedKey | null>(null);
   const [sections, setSections] = useState<SongSection[]>([]);
   const [currentSection, setCurrentSection] = useState<SongSection | null>(null);
+  const [currentChord, setCurrentChord] = useState<ChordChange | null>(null);
   const [neckLabels, setNeckLabels] = useState<NeckLabels>('degrees');
 
   const bringForward = (player: AlphaTab.AlphaTabApi, index: number) => {
@@ -198,6 +202,9 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
           setTracks(score.tracks.map((item, index) => trackEntry(item.name, kindOfTrack(item), index)));
           setTrack(firstTrack);
           setKey(scoreKey(score));
+          harmony.current = songHarmony(score);
+          addHarmony(alphaTab, score, harmony.current);
+          setCurrentChord(chordAt(harmony.current, 0));
           const lastBar = score.masterBars.at(-1);
           sectionList.current = songSections(
             score.masterBars.map((bar) => ({ start: bar.start, section: bar.section?.text })),
@@ -219,6 +226,8 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
           const played = args.endTick ? args.currentTick / args.endTick : 0;
           if (progressFill.current) progressFill.current.style.transform = `scaleX(${played})`;
           setCurrentSection(sectionAt(sectionList.current, played));
+          const chord = chordAt(harmony.current, args.currentTick);
+          setCurrentChord((previous) => (previous?.tick === chord?.tick ? previous : chord));
           setTime((previous) => {
             const next = { current: Math.floor(args.currentTime / 1000) * 1000, end: args.endTime };
             return next.current === previous.current && next.end === previous.end ? previous : next;
@@ -375,6 +384,23 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
   const menu = trackMenu(tracks);
   const scale = key ? scaleNotes(key.tonicPc, key.scale) : [];
 
+  const chordRomanNumeral = key && currentChord ? chordRoman(currentChord.name, key) : null;
+  const infoParts = [
+    key && <span key="key" title={keyTitle(key.tonicPc, key.scale)}>{keyShortName(key)}</span>,
+    currentSection && <span key="section">{currentSection.name}</span>,
+    currentChord && (
+      <span
+        key="chord"
+        className="tabplayer-chord"
+        data-degree={chordRomanNumeral?.degreeNumber ?? undefined}
+        style={{ '--chord': chordRomanNumeral?.degreeNumber ? `var(--d${chordRomanNumeral.degreeNumber})` : 'var(--muted)' } as React.CSSProperties}
+      >
+        {currentChord.name}
+        {chordRomanNumeral?.roman && <> <b>{chordRomanNumeral.roman}</b></>}
+      </span>
+    ),
+  ].filter(Boolean);
+
   const trackOption = (entry: TrackEntry) => (
     <li key={entry.index} role="presentation">
       <button type="button" role="option" aria-selected={entry.index === track} title={trackTitle(entry)} onClick={() => chooseTrack(entry.index)}>
@@ -436,9 +462,18 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
       {status === 'error' && <p className="tabplayer-note" role="alert">Не удалось загрузить табулатуру.</p>}
 
       <div className="tabplayer-dock">
+        {infoParts.length > 0 && (
+          <p className="tabplayer-info">
+            {infoParts.map((part, index) => (
+              <Fragment key={index}>
+                {index > 0 && <span aria-hidden="true"> · </span>}
+                {part}
+              </Fragment>
+            ))}
+          </p>
+        )}
         {neckShown && neck && (
           <div className="tabplayer-neck">
-            {key && <p className="tabplayer-key" title={keyTitle(key.tonicPc, key.scale)}>{keyShortName(key)}</p>}
             <div
               className="tabplayer-neck-window"
               style={
