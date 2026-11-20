@@ -5,7 +5,8 @@ import { sectionAt, songSections, type SongSection } from '../lib/sections';
 import { tabNeckDots, tabNeckFocusFret, tabNeckLinks, type NeckLabels, type TabNote } from '../lib/tabNeck';
 import { detectKey, keyShortName, keyTitle, scaleNotes, type DetectedKey } from '../lib/theory';
 import { formatTime } from '../lib/time';
-import { trackKind, type TrackKind } from '../lib/trackKind';
+import { kindOfTrack } from '../lib/trackKind';
+import { trackEntry, trackMenu, type TrackEntry } from '../lib/trackMenu';
 import { Fretboard, fretPositionRatio } from './Fretboard';
 import { PlayerIcon } from './PlayerIcon';
 import { TrackIcon } from './TrackIcon';
@@ -15,11 +16,6 @@ import './tabplayer.css';
 
 type AlphaTabModule = typeof AlphaTab;
 type View = 'tab' | 'score';
-
-interface TrackOption {
-  name: string;
-  kind: TrackKind;
-}
 
 interface Neck {
   tuning: number[];
@@ -119,13 +115,18 @@ function neckFor(track: AlphaTab.model.Track): Neck | null {
   };
 }
 
+function trackTitle(entry: TrackEntry): string {
+  return entry.detail ? `${entry.part} — ${entry.detail}` : entry.part;
+}
+
 function isTyping(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 }
 
-export function TabPlayer({ file }: { file: string }) {
+export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: number }) {
   const surface = useRef<HTMLDivElement>(null);
-  const trackMenu = useRef<HTMLDivElement>(null);
+  const trackPicker = useRef<HTMLDivElement>(null);
+  const trackList = useRef<HTMLUListElement>(null);
   const progressFill = useRef<HTMLDivElement>(null);
   const sectionList = useRef<SongSection[]>([]);
   const api = useRef<AlphaTab.AlphaTabApi | null>(null);
@@ -139,8 +140,8 @@ export function TabPlayer({ file }: { file: string }) {
   const [countIn, setCountIn] = useState(false);
   const [view, setView] = useState<View>('tab');
   const [time, setTime] = useState({ current: 0, end: 0 });
-  const [tracks, setTracks] = useState<TrackOption[]>([]);
-  const [track, setTrack] = useState(0);
+  const [tracks, setTracks] = useState<TrackEntry[]>([]);
+  const [track, setTrack] = useState(firstTrack);
   const [trackMenuOpen, setTrackMenuOpen] = useState(false);
   const [neck, setNeck] = useState<Neck | null>(null);
   const [neckShown, setNeckShown] = useState(true);
@@ -165,7 +166,7 @@ export function TabPlayer({ file }: { file: string }) {
       .then((alphaTab) => {
         if (disposed || !surface.current) return;
         const player = new alphaTab.AlphaTabApi(surface.current, {
-          core: { file, fontDirectory: '/alphatab/font/', scriptFile: new URL(SCRIPT, window.location.href).href },
+          core: { file, tracks: firstTrack, fontDirectory: '/alphatab/font/', scriptFile: new URL(SCRIPT, window.location.href).href },
           display: { staveProfile: 'Tab', layoutMode: 'Page', scale: 1.05, barsPerRow: -1, resources: themeColors() },
           notation: {
             rhythmMode: 'ShowWithBars',
@@ -192,13 +193,8 @@ export function TabPlayer({ file }: { file: string }) {
         player.updateSettings();
 
         player.scoreLoaded.on((score) => {
-          setTracks(
-            score.tracks.map((item, index) => ({
-              name: item.name.trim() || `Дорожка ${index + 1}`,
-              kind: trackKind({ percussion: item.staves[0]?.isPercussion ?? false, program: item.playbackInfo.program }),
-            })),
-          );
-          setTrack(0);
+          setTracks(score.tracks.map((item, index) => trackEntry(item.name, kindOfTrack(item), index)));
+          setTrack(firstTrack);
           setKey(scoreKey(score));
           const lastBar = score.masterBars.at(-1);
           sectionList.current = songSections(
@@ -207,11 +203,12 @@ export function TabPlayer({ file }: { file: string }) {
           );
           setSections(sectionList.current);
           setCurrentSection(sectionAt(sectionList.current, 0));
-          setNeck(score.tracks[0] ? neckFor(score.tracks[0]) : null);
+          const shown = score.tracks[firstTrack];
+          setNeck(shown ? neckFor(shown) : null);
         });
         player.soundFontLoad.on((progress) => setSoundProgress(progress.total ? progress.loaded / progress.total : 0));
         player.playerReady.on(() => {
-          bringForward(player, 0);
+          bringForward(player, firstTrack);
           setStatus('ready');
         });
         player.error.on(() => setStatus('error'));
@@ -258,7 +255,7 @@ export function TabPlayer({ file }: { file: string }) {
       api.current?.destroy();
       api.current = null;
     };
-  }, [file]);
+  }, [file, firstTrack]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -277,7 +274,7 @@ export function TabPlayer({ file }: { file: string }) {
       shortcuts.current[action]();
     };
     const onPointerDown = (event: PointerEvent) => {
-      if (!trackMenu.current?.contains(event.target as Node)) setTrackMenuOpen(false);
+      if (!trackPicker.current?.contains(event.target as Node)) setTrackMenuOpen(false);
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('pointerdown', onPointerDown);
@@ -286,6 +283,12 @@ export function TabPlayer({ file }: { file: string }) {
       window.removeEventListener('pointerdown', onPointerDown);
     };
   }, []);
+
+  useEffect(() => {
+    const list = trackList.current;
+    const chosen = list?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (list && chosen) list.scrollTop = chosen.offsetTop - (list.clientHeight - chosen.offsetHeight) / 2;
+  }, [trackMenuOpen]);
 
   const withPlayer = (action: (player: AlphaTab.AlphaTabApi) => void) => {
     if (api.current) action(api.current);
@@ -367,7 +370,20 @@ export function TabPlayer({ file }: { file: string }) {
 
   const ready = status === 'ready';
   const chosenTrack = tracks[track];
+  const menu = trackMenu(tracks);
   const scale = key ? scaleNotes(key.tonicPc, key.scale) : [];
+
+  const trackOption = (entry: TrackEntry) => (
+    <li key={entry.index} role="presentation">
+      <button type="button" role="option" aria-selected={entry.index === track} title={trackTitle(entry)} onClick={() => chooseTrack(entry.index)}>
+        <TrackIcon kind={entry.kind} />
+        <span className="tabplayer-track-name">
+          <span>{entry.part}</span>
+          {entry.detail && <small>{entry.detail}</small>}
+        </span>
+      </button>
+    </li>
+  );
 
   return (
     <div className="tabplayer">
@@ -386,29 +402,29 @@ export function TabPlayer({ file }: { file: string }) {
       </div>
 
       {tracks.length > 1 && chosenTrack && (
-        <div className="tabplayer-track" ref={trackMenu}>
+        <div className="tabplayer-track" ref={trackPicker}>
           <button
             type="button"
             className="chip tabplayer-track-button"
             aria-haspopup="listbox"
             aria-expanded={trackMenuOpen}
-            aria-label={`Дорожка: ${chosenTrack.name}`}
+            aria-label={`Дорожка: ${trackTitle(chosenTrack)}`}
+            title={trackTitle(chosenTrack)}
             onClick={() => setTrackMenuOpen(!trackMenuOpen)}
           >
             <TrackIcon kind={chosenTrack.kind} />
-            <span>{chosenTrack.name}</span>
+            <span>{chosenTrack.part}</span>
             <span aria-hidden="true">▾</span>
           </button>
           {trackMenuOpen && (
-            <ul className="tabplayer-track-menu" role="listbox" aria-label="Дорожка">
-              {tracks.map((option, index) => (
-                <li key={index} role="presentation">
-                  <button type="button" role="option" aria-selected={index === track} onClick={() => chooseTrack(index)}>
-                    <TrackIcon kind={option.kind} />
-                    <span>{option.name}</span>
-                  </button>
+            <ul className="tabplayer-track-menu" role="listbox" aria-label="Дорожка" ref={trackList}>
+              {menu.guitars.map(trackOption)}
+              {menu.guitars.length > 0 && menu.others.length > 0 && (
+                <li className="tabplayer-track-divider" role="presentation" aria-hidden="true">
+                  остальные
                 </li>
-              ))}
+              )}
+              {menu.others.map(trackOption)}
             </ul>
           )}
         </div>

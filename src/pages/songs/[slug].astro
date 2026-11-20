@@ -18,6 +18,6 @@ const { song } = Astro.props;
       <p class="lesson-crumb">{[song.artist, barsLabel(song.bars), `♩ = ${song.tempo}`].filter(Boolean).join(' · ')}</p>
       <h1>{song.title}</h1>
     </header>
-    <TabPlayer client:only="react" file={song.file} />
+    <TabPlayer client:only="react" file={song.file} firstTrack={song.firstTrack} />
   </article>
 </Base>

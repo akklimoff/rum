@@ -12,3 +12,12 @@ export function trackKind({ percussion, program }: TrackTraits): TrackKind {
   if (program >= 24 && program <= 31) return 'guitar';
   return 'other';
 }
+
+interface TrackLike {
+  staves: readonly { isPercussion: boolean }[];
+  playbackInfo: { program: number };
+}
+
+export function kindOfTrack(track: TrackLike): TrackKind {
+  return trackKind({ percussion: track.staves[0]?.isPercussion ?? false, program: track.playbackInfo.program });
+}

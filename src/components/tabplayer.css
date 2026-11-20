@@ -11,6 +11,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   overflow: hidden;
+  /* alphaTab puts its cursors at z-index 1000; keep that inside the tab so menus and the dock stay on top. */
+  isolation: isolate;
 }
 
 .tabplayer-surface .at-cursor-bar {
@@ -270,7 +272,12 @@
   left: 0;
   top: calc(100% + 8px);
   z-index: 10;
+  width: max-content;
   min-width: 240px;
+  max-width: min(380px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   margin: 0;
   padding: 6px;
   list-style: none;
@@ -310,7 +317,46 @@
   background: var(--raise);
 }
 
+.tabplayer-track-name {
+  display: grid;
+  min-width: 0;
+}
+
+.tabplayer-track-name small {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabplayer-track-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 10px 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tabplayer-track-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
+.tabplayer-track-divider ~ li button {
+  color: var(--muted);
+}
+
+.tabplayer-track-divider ~ li .track-icon {
+  color: inherit;
+}
+
 .tabplayer-track-menu button[aria-selected='true'] {
+  color: var(--fg);
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   font-weight: 600;
 }

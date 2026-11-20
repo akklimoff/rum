@@ -1,6 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import * as alphaTab from '@coderline/alphatab';
+import { kindOfTrack } from './trackKind';
+import { firstTrack } from './trackMenu';
 
 export interface Song {
   slug: string;
@@ -10,6 +12,7 @@ export interface Song {
   bars: number;
   tracks: number;
   file: string;
+  firstTrack: number;
 }
 
 const TAB_EXTENSIONS = new Set(['.gp', '.gpx', '.gp5', '.gp4', '.gp3']);
@@ -32,6 +35,7 @@ function readSong(folder: string, fileName: string): Song {
       bars: score.masterBars.length,
       tracks: score.tracks.length,
       file: `/tabs/${encodeURIComponent(fileName)}`,
+      firstTrack: firstTrack(score.tracks.map(kindOfTrack)),
     };
   } catch (cause) {
     throw new Error(`Не удалось прочитать табулатуру ${fileName}`, { cause });

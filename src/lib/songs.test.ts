@@ -33,7 +33,15 @@ withTab('a song is described by what its file says', () => {
     bars: 42,
     tracks: 7,
     file: '/tabs/hotel-california-solo.gp',
+    firstTrack: 0,
   });
+});
+
+const OASIS = 'public/tabs/dont-look-back-in-anger.gp';
+
+test.skipIf(!existsSync(OASIS))('a song opens on its first guitar, not on the vocal melody before it', () => {
+  const [song] = loadSongs(folderWith({ 'anger.gp': OASIS }));
+  expect(song?.firstTrack).toBe(2);
 });
 
 withTab('every Guitar Pro file in the folder is a song, other files are ignored', () => {
