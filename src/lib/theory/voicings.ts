@@ -105,8 +105,11 @@ export function chordVoicings(chord: BuiltChord, tuning: readonly string[] = STA
     const best = ranked.find((candidate) => accept(candidate) && !picks.includes(candidate));
     if (best) picks.push(best);
   };
-  pick((candidate) => candidate.frets.includes(0));
-  for (const fromBass of range(1, ROOT_STRINGS)) pick((candidate) => candidate.bassString === tuning.length - fromBass);
+  const usesOpenString = (candidate: Candidate) => candidate.frets.includes(0);
+  pick(usesOpenString);
+  for (const fromBass of range(1, ROOT_STRINGS)) {
+    pick((candidate) => !usesOpenString(candidate) && candidate.bassString === tuning.length - fromBass);
+  }
 
   return picks
     .slice(0, limit)

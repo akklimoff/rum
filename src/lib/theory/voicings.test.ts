@@ -24,6 +24,24 @@ test('the classic shapes are found', () => {
   expect(shapes(7, '7')).toContainEqual([1, 0, 0, 0, 2, 3]);
 });
 
+test('each string-group shape is movable, so the open shape has no near-copies', () => {
+  expect(shapes(0, 'maj')).toContainEqual([3, 5, 5, 5, 3, null]);
+  expect(shapes(7, 'maj')).toContainEqual([3, 3, 4, 5, 5, 3]);
+  for (const { root, type } of everyChord()) {
+    expect(shapes(root, type).filter((frets) => frets.includes(0)).length, buildChord(root, type).symbol).toBeLessThanOrEqual(1);
+  }
+});
+
+test('a half-diminished shape never drops its flat fifth', () => {
+  for (const root of ROOTS) {
+    const chord = buildChord(root, 'm7b5');
+    const flatFifth = chord.tones.find((tone) => tone.degree === '♭5')!;
+    for (const { frets } of chordVoicings(chord)) {
+      expect(sounding(frets).some((note) => note.midi % 12 === flatFifth.pc), `${chord.symbol} ${frets}`).toBe(true);
+    }
+  }
+});
+
 test('every shape is playable and is the chord', () => {
   for (const { root, type } of everyChord()) {
     const chord = buildChord(root, type);
@@ -33,7 +51,7 @@ test('every shape is playable and is the chord', () => {
       expect(bass.midi % 12, `${chord.symbol} ${frets}`).toBe(root);
       const heard = new Set(notes.map((note) => note.midi % 12));
       const missing = chord.tones.filter((tone) => !heard.has(tone.pc));
-      const fifthMayGo = chord.tones.length === 4 && missing.every((tone) => tone.degreeNumber === 5);
+      const fifthMayGo = chord.tones.length === 4 && missing.every((tone) => (tone.pc - root + 12) % 12 === 7);
       expect(missing.length === 0 || fifthMayGo, `${chord.symbol} ${frets}`).toBe(true);
       const strings = notes.map((note) => note.string);
       expect(strings, `${chord.symbol} ${frets}`).toEqual(Array.from({ length: strings.length }, (_, i) => strings[0]! + i));
