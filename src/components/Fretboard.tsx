@@ -34,6 +34,7 @@ const FRET_WIDTH = 52;
 const TOP_Y = 24;
 const STRING_GAP = 28;
 const EDGE = 12;
+const CROSS_BASELINE = 5;
 const SINGLE_INLAYS = [3, 5, 7, 9, 15];
 const DOUBLE_INLAYS = [12];
 
@@ -110,13 +111,13 @@ export function Fretboard({ dots, stringCount, fretCount, ariaLabel, replayKey, 
           className="fretboard-muted"
           aria-hidden="true"
           x={fretCenterX(0)}
-          y={stringY(string) + 5}
+          y={stringY(string) + CROSS_BASELINE}
           textAnchor="middle"
         >
           ×
         </text>
       ))}
-      {dots.map((dot) => (
+      {dots.filter((dot) => !(dot.fret === 0 && mutedStrings.includes(dot.string))).map((dot) => (
         <g
           key={`${dot.string}:${dot.fret}`}
           className="fretboard-dot"

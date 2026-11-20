@@ -112,6 +112,25 @@ test('muted strings get a cross at the nut', () => {
   expect(crosses).toHaveLength(2);
   expect([...crosses].map((cross) => cross.textContent)).toEqual(['×', '×']);
   expect(crosses[0]!.getAttribute('aria-hidden')).toBe('true');
+  const open = renderBoard([dot({ string: 0, fret: 0 })]).querySelector('[data-dot] circle');
+  expect(crosses[0]!.getAttribute('x')).toBe(open!.getAttribute('cx'));
+});
+
+test('a cross takes the open position over a dot on that string', () => {
+  const { container } = render(
+    <Fretboard
+      dots={[dot({ string: 5, fret: 0 }), dot({ string: 5, fret: 3 })]}
+      stringCount={6}
+      fretCount={15}
+      ariaLabel="Гриф"
+      mutedStrings={[5]}
+    />,
+  );
+  expect(container.querySelectorAll('.fretboard-muted')).toHaveLength(1);
+  expect(container.querySelectorAll('[data-dot]')).toHaveLength(1);
+  expect(container.querySelector('[data-dot] circle')!.getAttribute('cx')).not.toBe(
+    container.querySelector('.fretboard-muted')!.getAttribute('x'),
+  );
 });
 
 test('no crosses unless strings are muted', () => {
