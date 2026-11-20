@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type * as AlphaTab from '@coderline/alphatab';
 import { tabCursorHandler } from './tabCursor';
 
@@ -31,12 +31,6 @@ function setup() {
 
 const mode = 0 as Mode;
 
-function mockReducedMotion(matches: boolean) {
-  vi.stubGlobal('matchMedia', () => ({ matches }));
-}
-
-afterEach(() => vi.unstubAllGlobals());
-
 describe('tabCursorHandler', () => {
   it('adds the frame and the mark on attach and removes them on detach', () => {
     const { handler, cursors, host } = setup();
@@ -51,24 +45,13 @@ describe('tabCursorHandler', () => {
     expect([frame.style.left, frame.style.top, frame.style.width, frame.style.height]).toEqual(['10px', '20px', '300px', '80px']);
   });
 
-  it('centres a 14px mark on the beat position without a transition', () => {
+  it('centres a 14px mark on the beat position', () => {
     const { handler, mark } = setup();
     handler.placeBeatCursor(container(), bounds(10, 20, 300, 80), 100);
     expect([mark.style.left, mark.style.width, mark.style.top, mark.style.height]).toEqual(['93px', '14px', '20px', '80px']);
-    expect(mark.style.transition).toBe('none');
   });
 
-  it('animates the mark to the next beat linearly', () => {
-    mockReducedMotion(false);
-    const { handler, mark } = setup();
-    handler.placeBeatCursor(container(), bounds(10, 20, 300, 80), 100);
-    handler.transitionBeatCursor(container(), bounds(10, 20, 300, 80), 100, 160, 450, mode);
-    expect(mark.style.left).toBe('153px');
-    expect(mark.style.transition).toBe('left 450ms linear');
-  });
-
-  it('keeps the mark in place under reduced motion', () => {
-    mockReducedMotion(true);
+  it('leaves the mark on the sounding beat during a transition', () => {
     const { handler, mark } = setup();
     handler.placeBeatCursor(container(), bounds(10, 20, 300, 80), 100);
     handler.transitionBeatCursor(container(), bounds(10, 20, 300, 80), 100, 160, 450, mode);

@@ -8,8 +8,6 @@ const MARK_WIDTH = 14;
 
 const hostOf = (container: Container) => (container as unknown as { element: HTMLElement }).element;
 
-const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 const px = (value: number) => `${value}px`;
 
 export function tabCursorHandler(): AlphaTab.ICursorHandler {
@@ -42,13 +40,8 @@ export function tabCursorHandler(): AlphaTab.ICursorHandler {
       frame.style.height = px(bar.h);
     },
     placeBeatCursor(_beatCursor, beatBounds, startBeatX) {
-      mark.style.transition = 'none';
       placeMark(beatBounds, startBeatX);
     },
-    transitionBeatCursor(_beatCursor, _beatBounds, _startBeatX, nextBeatX, duration) {
-      if (prefersReducedMotion()) return;
-      mark.style.transition = `left ${duration}ms linear`;
-      mark.style.left = px(nextBeatX - MARK_WIDTH / 2);
-    },
+    transitionBeatCursor() {},
   };
 }

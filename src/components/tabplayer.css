@@ -36,6 +36,13 @@
 .tabplayer-beat-mark {
   border-radius: 7px;
   background: color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: left 150ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabplayer-beat-mark {
+    transition: none;
+  }
 }
 
 .tabplayer-surface .at-selection div {
