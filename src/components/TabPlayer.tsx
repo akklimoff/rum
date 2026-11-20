@@ -10,6 +10,7 @@ import { trackEntry, trackMenu, type TrackEntry } from '../lib/trackMenu';
 import { Fretboard, fretPositionRatio } from './Fretboard';
 import { PlayerIcon } from './PlayerIcon';
 import { TrackIcon } from './TrackIcon';
+import { tabCursorHandler } from './tabCursor';
 import { LABEL_MODES, Segmented } from './controls';
 import './explorer.css';
 import './tabplayer.css';
@@ -181,6 +182,7 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
             enableUserInteraction: true,
           },
         });
+        player.customCursorHandler = tabCursorHandler();
         api.current = player;
 
         const modern = (font: AlphaTab.model.Font) => alphaTab.model.Font.withFamilyList(TAB_FONT, font.size, undefined, font.weight);
