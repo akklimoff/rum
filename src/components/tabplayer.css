@@ -94,10 +94,18 @@
 }
 
 .tabplayer-info {
-  margin: 0 6px;
+  align-self: flex-start;
+  margin: 0;
+  padding: 4px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--muted);
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
 }
 
 .tabplayer-chord {

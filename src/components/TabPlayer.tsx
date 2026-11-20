@@ -462,16 +462,6 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
       {status === 'error' && <p className="tabplayer-note" role="alert">Не удалось загрузить табулатуру.</p>}
 
       <div className="tabplayer-dock">
-        {infoParts.length > 0 && (
-          <p className="tabplayer-info">
-            {infoParts.map((part, index) => (
-              <Fragment key={index}>
-                {index > 0 && <span aria-hidden="true"> · </span>}
-                {part}
-              </Fragment>
-            ))}
-          </p>
-        )}
         {neckShown && neck && (
           <div className="tabplayer-neck">
             <div
@@ -494,6 +484,17 @@ export function TabPlayer({ file, firstTrack }: { file: string; firstTrack: numb
               </div>
             </div>
           </div>
+        )}
+
+        {infoParts.length > 0 && (
+          <p className="tabplayer-info">
+            {infoParts.map((part, index) => (
+              <Fragment key={index}>
+                {index > 0 && <span aria-hidden="true"> · </span>}
+                {part}
+              </Fragment>
+            ))}
+          </p>
         )}
 
         <div className="tabplayer-bar" role="toolbar" aria-label="Управление проигрыванием">
